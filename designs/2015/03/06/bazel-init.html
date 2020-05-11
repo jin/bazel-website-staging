@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>bazel init a.k.a ./configure for Bazel - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/designs/2015/03/06/bazel-init.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="bazel init a.k.a ./configure for Bazel">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <p><strong>This design document has been replaced by
+<a href="/designs/2015/07/02/skylark-remote-repositories.html">Skylark Remote Repositories</a>
+and is maintained here just for reference</strong></p>
+
+<h1 id="design-document-bazel-init-aka-configure-for-bazel">Design Document: bazel init a.k.a ./configure for Bazel</h1>
+<p><em>A configuration mechanism for Bazel</em></p>
+
+<p><strong>Design documents are not descriptions of the current functionality of Bazel.
+Always go to the documentation for current information.</strong></p>
+
+<p><strong>Status:</strong> deprecated, replaced by <a href="/designs/2015/07/02/skylark-remote-repositories.html">Skylark Remote Repositories</a></p>
+
+<p><strong>Author:</strong> dmarting@google.com</p>
+
+<p><strong>Design document published</strong>: 06 March 2015</p>
+
+<h2 id="i-rationale">I. Rationale</h2>
+
+<p>Bazel tooling needs special setup to work. For example, C++ crosstool
+configuration requires path to GCC or Java configuration requires the
+path to the JDK. Autodetecting those paths from Bazel would be broken
+because each ruleset requires its own configuration (C++ CROSSTOOL
+information is totally different from JDK detection or from go root
+detection). Therefore, providing a general mechanism to configure
+Bazel tooling seems natural. To have Bazel self-contained, we will
+ship this mechanism as an additional command of Bazel. Because this
+command deals with non-hermetic parts of Bazel, this command should
+also group all non-hermetic steps (i.e. it should fetch the
+dependencies from the remote repositories) so a user can run it and
+get on a plane with everything needed.</p>
+
+<h2 id="ii-considered-use-cases">II. Considered use-cases</h2>
+
+<p>We consider the 3 following use-cases:</p>
+
+<ul>
+  <li><strong>UC1.</strong> The user wants to not worry about tools configuration and
+use the default one for golden languages (Java, C++, Shell) and
+wants to also activate an optional language (Go). No configuration
+information (aka <code class="highlighter-rouge">tools</code> package) should be checked into the
+version control system.</li>
+  <li><strong>UC2.</strong> The user wants to tweak Java configuration but not C++. Of
+course, the user wants his tweak to be shared with his team (i.e.
+<code class="highlighter-rouge">tools/jdk</code> should be checked into the version control system).
+However, the user does not want to have C++ information (i.e.
+<code class="highlighter-rouge">tools/cpp</code>) in the VCS.</li>
+  <li><strong>UC3.</strong> The user wants his build to be hermetic and he wants to
+set up everything in his <code class="highlighter-rouge">tools</code> directory (Google use-case).</li>
+</ul>
+
+<h3 id="notes">Notes</h3>
+
+<p>This document addresses the special case of the configuration of the
+<code class="highlighter-rouge">tools</code> package, mechanisms presented here could be extended to any
+dependency that needs to be configured (e.g., detecting the installed
+libncurse) but that is out of the scope of this document.</p>
+
+<p>Anywhere in this document we refer to the <code class="highlighter-rouge">tools</code> package as the
+package that will receive the current <code class="highlighter-rouge">tools</code> package content, it does
+not commit to keep that package name.</p>
+
+<h2 id="iii-requirements">III. Requirements</h2>
+
+<h3 id="bazel-init-should"><code class="highlighter-rouge">bazel init</code> should:</h3>
+<ul>
+  <li><em>a1.</em> Not be available in hermetic version (i.e. Google version of
+Bazel, a.k.a Blaze).</li>
+  <li><em>a2.</em> Allow per-language configuration. I.e., Java and C++ tooling
+configuration should be separated.</li>
+  <li><em>a3.</em> Allow Skylark add-ons to specify their configuration, this
+should be pluggable so we can actually activate configuration per
+rule set.</li>
+  <li><em>a4.</em> Support at least 3 modes corresponding to each envisioned
+use-cases:
+    <ul>
+      <li><strong>UC1.</strong>: <strong>installed</strong> (default mode): a “hidden” <code class="highlighter-rouge">tools</code>
+package contains the detected tool paths (<code class="highlighter-rouge">gcc</code>, the JDKs, …)
+as well as their configuration (basically the content of the
+current <code class="highlighter-rouge">//tools</code> package). This package should be constructed
+as much as possibly automatically with a way for the user to
+overwrite detected settings.</li>
+      <li><strong>UC2.</strong>: <strong>semi-hermetic</strong>: the “hidden” <code class="highlighter-rouge">tools</code> package is used
+only for linking the actual tool paths but the configuration
+would be checked-in into the workspace (in a similar way that
+what is currently done in Bazel). The “hidden” <code class="highlighter-rouge">tools</code> package
+could contains several versions of the same tools (e.g., jdk-8,
+jdk-7, …) and the workspace link to a specific one.</li>
+      <li><strong>UC3.</strong>: <strong>hermetic</strong>: this is the Google way of thing: the
+user check-in everything that he thinks belong to the workspace
+and the init command should do nothing.</li>
+    </ul>
+  </li>
+  <li><em>a5.</em> Support explicit reconfiguration. If the configuration
+mechanism changes or the user wants to tune the configuration, it
+should support to modify the configuration, i.e., update the
+various paths or change the default options.</li>
+</ul>
+
+<h3 id="bazel-init-could"><code class="highlighter-rouge">bazel init</code> could:</h3>
+
+<ul>
+  <li><em>b1.</em>: Initialize a new workspace: as it would support configuring
+a whole tool directory, it might be quite close to actually
+initializing a new workspace.</li>
+</ul>
+
+<h2 id="iv-user-interface">IV. User interface</h2>
+
+<p>To be efficient, when the <code class="highlighter-rouge">tools</code> directory is missing, <code class="highlighter-rouge">bazel build</code>
+should display an informative error message to actually run <code class="highlighter-rouge">bazel
+init</code>.</p>
+
+<p>Configuration is basically just setting a list of build constants like
+the path to the JDK, the list of C++ flags, etc…</p>
+
+<p>When the user type <code class="highlighter-rouge">bazel init</code>, the configuration process starts with
+the default configuration (e.g., configure for “gold features” such as
+C++, Java, sh_, …). It should try to autodetect as much as possible.
+If a language configuration needs something it cannot autodetect, then
+it can prompt the user for the missing information and the
+configuration can fail if something is really wrong.</p>
+
+<p>On default installation, <code class="highlighter-rouge">bazel init</code> should not prompt the user at
+all. When the process finishes, the command should output a summary of
+the configuration. The configuration is then stored in a “hidden”
+directory which is similar to our current <code class="highlighter-rouge">tools</code> package. By default,
+the labels in the configuration would direct to that package (always
+mapped as a top-level package). The “hidden:” directory would live in
+<code class="highlighter-rouge">$(output_base)/init/tools</code> and be mapped using the package path
+mechanism. The <code class="highlighter-rouge">--overwrite</code> option would be needed to rerun the
+automatic detection and overwrite everything including the eventual
+user-set options.</p>
+
+<p>For the hermetic mode, the user has to recreate the default tools
+package inside the workspace. If the user has a package with the same
+name in the workspace, then the “hidden” directory should be ignored
+(–package_path).</p>
+
+<p>To set a configuration option, the user would type <code class="highlighter-rouge">bazel init
+java:jdk=/path/to/jdk</code> or to use the autodetection on a specific
+option <code class="highlighter-rouge">bazel init java:jdk</code>. The list of settings group could be
+obtained by <code class="highlighter-rouge">bazel init list</code> and the list of option with their value
+for a specific language by <code class="highlighter-rouge">bazel init list group</code>. <code class="highlighter-rouge">bazel init list
+all</code> could give the full configuration of all activated groups.</p>
+
+<p><em>Prospective idea:</em> Bazel init should explore the BUILD file to find the
+Skylark <code class="highlighter-rouge">load</code> statements, determine if there is an associated init
+script and use it.</p>
+
+<h2 id="v-developer-interface">V. Developer interface</h2>
+
+<p>This section presents the support for developer that wants to add
+autoconfiguration for a ruleset. The developer adding a configuration
+would provide with a configuration script for it. This script will be
+in charge of creating the package in the tools directory during <code class="highlighter-rouge">bazel
+init</code> (i.e., the script for Java support will construct the
+//tools/jdk package in the “hidden” package path).</p>
+
+<p>Because of skylark rules and the fact that the configuration script
+should run before having access to the C++ and Java tooling, this
+seems unreasonable to use a compiled language (Java or C++) for this
+script. We could use the Skylark support to make it a subset of python
+or we could use a bash script. Python support would be portable since
+provided by Bazel itself and consistent with skylark. It also gives
+immediate support for manipulating BUILD files. So keeping a
+“skylark-like” syntax, the interface would look like:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">configuration</span><span class="p">(</span>
+	<span class="n">name</span><span class="p">,</span>              <span class="c1"># name of the tools package to configure
+</span>	<span class="n">autodetect_method</span><span class="p">,</span> <span class="c1"># the auto detection method
+</span>	<span class="n">generate_method</span><span class="p">,</span>   <span class="c1"># the actual package generation
+</span>	<span class="n">load_method</span><span class="p">,</span>       <span class="c1"># A method to load the attributes presented
+</span>	                   <span class="c1">#            to the user from the package
+</span>	<span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>          <span class="c1"># List of attributes this script propose
+</span>		<span class="s">"jdk_path"</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>
+		<span class="s">"__some_other_path"</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span>  <span class="c1"># not user-settable
+</span>		<span class="s">"jdk_version"</span><span class="p">:</span> <span class="n">Integer</span><span class="p">,</span>
+	<span class="p">})</span>
+</code></pre></div></div>
+
+<p>Given that interface, an initial run of <code class="highlighter-rouge">bazel init</code> would do:</p>
+
+<ol>
+  <li>Find all language configuration scripts</li>
+  <li>Run <code class="highlighter-rouge">load_method</code> for each script</li>
+  <li>Run <code class="highlighter-rouge">autodetect_method</code> for each script. Replace non loaded
+attribute (attribute still undefined after <code class="highlighter-rouge">load_method</code>) if and
+only if <code class="highlighter-rouge">--rerun</code> option is provided</li>
+  <li>Run <code class="highlighter-rouge">generate_method</code> for each script</li>
+  <li>Fetch all non up to date dependencies of remote repository</li>
+</ol>
+
+<p>See Appendix B for examples of such methods.</p>
+
+<h2 id="vi-implementation-plan">VI. Implementation plan</h2>
+
+<ol>
+  <li>Add the hidden tools directory and have it binded with package
+path when no tools directory exists. The hidden tools directory
+will have a WORKSPACE file and will have an automatic local
+repository with the “init” name so that we can actually bind
+targets from it into our workspace.</li>
+  <li>Add <code class="highlighter-rouge">bazel init</code> that support the configuration for native
+packages in Java, that is: Java, C++, genrule and test. This
+would create the necessary mechanisms for supporting the
+developer and the basic user interface. This commands will be
+totally in Java for now and should trigger the fetch part of the
+remote repository.</li>
+  <li>Design and implement the language extension ala Skylark using the
+design for the Java version of point 2.</li>
+  <li>Convert the existing configuration into that language.</li>
+  <li>Integrate the configuration with Skylark (i.e. Skylark rules
+writer can add configuration step). We should here decide on
+how it should be included (as a separate script? how do we
+ship a skylark rule set? can we have load statement loading
+a full set of rules?).</li>
+  <li>Create configuration for the existing skylark build rules. If
+we support load statement with label, we can then create a
+repository for Skylark rules.</li>
+</ol>
+
+<h2 id="appendix-a-various-comments">Appendix A. Various comments</h2>
+
+<ol>
+  <li>We should get rid of the requirement for a <code class="highlighter-rouge">tools/defaults/BUILD</code> file.</li>
+  <li>To works correctly, we need some local caching of the bazel
+repository so tools are available. We could have bazelrc specify a
+global path to the local cache (with <code class="highlighter-rouge">/etc/bazel.bazelrc</code> being loaded
+first to <code class="highlighter-rouge">~/.bazelrc</code>). We could use a <code class="highlighter-rouge">~/.bazel</code> directory to put an
+updatable tools cache also. This is needed because user probably want
+to initialize a workspace tooling on a plane</li>
+  <li>This proposal would probably add a new top-level package. We
+should really take care of the naming convention for default top
+packages (i.e., <code class="highlighter-rouge">tools</code>, <code class="highlighter-rouge">tools/defaults</code>, <code class="highlighter-rouge">visibility</code>, <code class="highlighter-rouge">external</code>,
+<code class="highlighter-rouge">condition</code>…). We are going to make some user unhappy if they cannot
+have an <code class="highlighter-rouge">external</code> directory at the top of their workspace (I would
+just not use a build system that goes against my workspace structure).
+While it is still time to do it, we should rename them with a nice
+naming convention.  A good way to do it is to make top-package name
+constants, possibly settable in the WORKSPACE file (so we can actually
+keep the name we like but user that are bothered by that can change
+it).</li>
+  <li>As we will remove the tools directory from the workspace, it
+makes sense to add another prelude_bazel file somewhere else. As the
+<code class="highlighter-rouge">WORKSPACE</code> file controls the workspace, it makes sense to have the
+<code class="highlighter-rouge">prelude_bazel</code> logic in it (and the load statement should support
+labels so that a user can actually specify remote repository labels).</li>
+</ol>
+
+<h2 id="appendix-b-skylark-like-code-examples-of-configuration-functions">Appendix B. Skylark-like code examples of configuration functions</h2>
+
+<p>This is just a quick draft, please feel free to propose improvements:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># env is the environment, attrs are the values set either from the command-line
+# or from loading the package
+</span><span class="k">def</span> <span class="nf">autodetect_method</span><span class="p">(</span><span class="n">env</span><span class="p">,</span> <span class="n">attrs</span><span class="p">):</span>
+  <span class="k">if</span> <span class="ow">not</span> <span class="n">attrs</span><span class="o">.</span><span class="n">java_version</span><span class="p">:</span>  <span class="c1"># If not given in the command line nor loaded
+</span>    <span class="n">attrs</span><span class="o">.</span><span class="n">java_version</span> <span class="o">=</span> <span class="mi">8</span>
+  <span class="k">if</span> <span class="ow">not</span> <span class="n">attrs</span><span class="o">.</span><span class="n">jdk_path</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">env</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s">"JDK_HOME"</span><span class="p">):</span>
+      <span class="n">attrs</span><span class="o">.</span><span class="n">jdk_path</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">"JDK_HOME"</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">env</span><span class="o">.</span><span class="n">os</span> <span class="o">=</span> <span class="s">"darwin"</span><span class="p">:</span>
+      <span class="n">attrs</span><span class="o">.</span><span class="n">jdk_path</span> <span class="o">=</span> <span class="n">system</span><span class="p">(</span><span class="s">"/usr/libexec/java_home -v 1."</span> <span class="o">+</span> <span class="n">attrs</span><span class="o">.</span><span class="n">java_version</span> <span class="o">+</span> <span class="s">"+"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="n">attrs</span><span class="o">.</span><span class="n">jdk_path</span> <span class="o">=</span> <span class="n">basename</span><span class="p">(</span><span class="n">basename</span><span class="p">(</span><span class="n">readlink</span><span class="p">(</span><span class="n">env</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">java</span><span class="p">))))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">attrs</span><span class="o">.</span><span class="n">jdk_path</span><span class="p">:</span>
+      <span class="n">fail</span><span class="p">(</span><span class="s">"Could not find JDK home, please set it with `bazel init java:jdk_path=/path/to/jdk`"</span><span class="p">)</span>
+   <span class="n">attrs</span><span class="o">.</span><span class="n">__some_other_path</span> <span class="o">=</span> <span class="n">first</span><span class="p">(</span><span class="n">glob</span><span class="p">([</span><span class="s">"/usr/bin/java"</span><span class="p">,</span> <span class="s">"/usr/local/bin/java"</span><span class="p">]))</span>
+
+
+<span class="c1"># attrs is the list of attributes. It basically contains the list of rules
+# we should generate in the corresponding package. Please note
+# That all labels are replaced by relative ones as it should not be able
+# to write out of the package.
+</span><span class="k">def</span> <span class="nf">generate_method</span><span class="p">(</span><span class="n">attrs</span><span class="p">):</span>
+  <span class="n">scratch_file</span><span class="p">(</span><span class="s">"BUILD.jdk"</span><span class="p">,</span> <span class="s">"""
+Content of the jdk BUILD file.
+"""</span><span class="p">)</span>
+  <span class="c1"># Create binding using local_repository. This should not lie in
+</span>  <span class="c1"># the WORKSPACE file but in a separate WORKSPACE file in the hidden
+</span>  <span class="c1"># directory.
+</span>  <span class="n">local_repository</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">"jdk"</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="n">attrs</span><span class="o">.</span><span class="n">jdk_path</span><span class="p">,</span> <span class="n">build_file</span> <span class="o">=</span> <span class="s">"BUILD.jdk"</span><span class="p">)</span>
+  <span class="n">bind</span><span class="p">(</span><span class="s">"@jdk//jdk"</span><span class="p">,</span> <span class="s">"jdk"</span><span class="p">)</span>  <span class="c1"># also add a filegroup("jdk", "//external:jdk")
+</span>  <span class="n">java_toolchain</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">"toolchain"</span><span class="p">,</span> <span class="n">source</span> <span class="o">=</span> <span class="n">attrs</span><span class="o">.</span><span class="n">java_version</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="n">attrs</span><span class="o">.</span><span class="n">java_version</span><span class="p">)</span>
+  <span class="c1"># The magic __BAZEL_*__ variable could be set so we don’t
+</span>  <span class="c1"># redownload the repository if possible. This install_target
+</span>  <span class="c1"># should leverage the work already done on remote repositories.
+</span>  <span class="c1"># This should build and copy the result into the tools directory with
+</span>  <span class="c1"># The corresponding exports_files now.
+</span>  <span class="n">install_target</span><span class="p">(</span><span class="n">__BAZEL_REPOSITORY__</span><span class="p">,</span> <span class="n">__BAZEL_VERSION__</span><span class="p">,</span> <span class="s">"//src/java_tools/buildjar:JavaBuilder_deploy.jar"</span><span class="p">)</span>
+  <span class="n">install_target</span><span class="p">(</span><span class="n">__BAZEL_REPOSITORY__</span><span class="p">,</span> <span class="n">__BAZEL_VERSION__</span><span class="p">,</span> <span class="s">"//src/java_tools/buildjar:JavaBuilder_deploy.jar"</span><span class="p">)</span>
+  <span class="n">copy</span><span class="p">(</span><span class="s">"https://ijar_url"</span><span class="p">,</span> <span class="s">"ijar"</span><span class="p">)</span>
+
+
+
+<span class="c1"># Load the package attributes.
+# - attrs should be written and value will be replaced by the user-provided
+# one if any
+# - query is a query object restricted to the target package and resolving label
+# relatively to the target package. This object should also be able to search
+# for repository binding
+# Note that the query will resolve in the actual tools directory, not the hidden
+# one if it exists whereas the generation only happens in the hidden one.
+</span><span class="k">def</span> <span class="nf">load_method</span><span class="p">(</span><span class="n">attrs</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+  <span class="n">java_toolchain</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">getOne</span><span class="p">(</span><span class="n">kind</span><span class="p">(</span><span class="s">"java_toolchain"</span><span class="p">,</span> <span class="s">"..."</span><span class="p">))</span>
+  <span class="k">if</span> <span class="n">java_toolchain</span><span class="p">:</span>
+    <span class="n">attrs</span><span class="o">.</span><span class="n">jdk_version</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">java_toolchain</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">java_toolchain</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+  <span class="n">jdk</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">getOne</span><span class="p">(</span><span class="n">attr</span><span class="p">(</span><span class="s">"name"</span><span class="p">,</span> <span class="s">"jdk"</span><span class="p">,</span> <span class="n">kind</span><span class="p">(</span><span class="s">"local_repository"</span><span class="p">,</span> <span class="s">"..."</span><span class="p">)))</span>
+  <span class="k">if</span> <span class="n">jdk</span><span class="p">:</span>
+    <span class="n">attrs</span><span class="o">.</span><span class="n">jdk_path</span> <span class="o">=</span> <span class="n">jdk</span><span class="o">.</span><span class="n">path</span>
+</code></pre></div></div>
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: bazel init a.k.a ./configure for Bazel&body=Documentation URL: https://docs.bazel.build/designs/2015/03/06/bazel-init.html&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#i-rationale">I. Rationale</a></li>
+<li class="toc-entry toc-h2"><a href="#ii-considered-use-cases">II. Considered use-cases</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#notes">Notes</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#iii-requirements">III. Requirements</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#bazel-init-should">bazel init should:</a></li>
+<li class="toc-entry toc-h3"><a href="#bazel-init-could">bazel init could:</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#iv-user-interface">IV. User interface</a></li>
+<li class="toc-entry toc-h2"><a href="#v-developer-interface">V. Developer interface</a></li>
+<li class="toc-entry toc-h2"><a href="#vi-implementation-plan">VI. Implementation plan</a></li>
+<li class="toc-entry toc-h2"><a href="#appendix-a-various-comments">Appendix A. Various comments</a></li>
+<li class="toc-entry toc-h2"><a href="#appendix-b-skylark-like-code-examples-of-configuration-functions">Appendix B. Skylark-like code examples of configuration functions</a></li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>

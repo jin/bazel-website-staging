@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Design Documents - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/designs/">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="Design Documents">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <h1 id="design-documents">Design Documents</h1>
+
+<p>The list of design documents is published on the <a href="https://github.com/bazelbuild/proposals">Bazel Proposals Repository</a>.</p>
+
+<p>It’s possible that designs change as they are implemented in practice. The
+published design documents capture the initial design, and <em>not</em> the ongoing
+changes as designs are implemented.</p>
+
+<p>Always go to the <a href="https://docs.bazel.build">documentation</a> for descriptions of
+current Bazel functionality.</p>
+
+<h2 class="no_toc" id="table-of-contents">Table of Contents</h2>
+
+<ul id="markdown-toc">
+  <li><a href="#when-do-i-need-a-design-document-and-review" id="markdown-toc-when-do-i-need-a-design-document-and-review">When do I need a design document and review?</a></li>
+  <li><a href="#workflow" id="markdown-toc-workflow">Workflow</a>    <ul>
+      <li><a href="#write-the-design-document" id="markdown-toc-write-the-design-document">Write the design document</a></li>
+      <li><a href="#create-a-pull-request" id="markdown-toc-create-a-pull-request">Create a Pull Request</a></li>
+      <li><a href="#announce-the-new-proposal" id="markdown-toc-announce-the-new-proposal">Announce the new proposal</a></li>
+      <li><a href="#iterate-with-reviewers" id="markdown-toc-iterate-with-reviewers">Iterate with reviewers</a></li>
+      <li><a href="#update-the-status" id="markdown-toc-update-the-status">Update the status</a></li>
+    </ul>
+  </li>
+  <li><a href="#should-i-use-markdown-or-google-docs" id="markdown-toc-should-i-use-markdown-or-google-docs">Should I use Markdown or Google Docs?</a></li>
+  <li><a href="#using-google-docs" id="markdown-toc-using-google-docs">Using Google Docs</a></li>
+  <li><a href="#using-markdown" id="markdown-toc-using-markdown">Using Markdown</a></li>
+  <li><a href="#how-to-choose-a-lead-reviewer" id="markdown-toc-how-to-choose-a-lead-reviewer">How to choose a lead reviewer?</a></li>
+  <li><a href="#im-a-reviewer-what-are-my-responsibilities" id="markdown-toc-im-a-reviewer-what-are-my-responsibilities">I’m a reviewer. What are my responsibilities?</a>    <ul>
+      <li><a href="#when-you-receive-a-new-proposal" id="markdown-toc-when-you-receive-a-new-proposal">When you receive a new proposal</a></li>
+      <li><a href="#during-the-review-process" id="markdown-toc-during-the-review-process">During the review process</a></li>
+    </ul>
+  </li>
+  <li><a href="#im-a-lead-reviewer-do-i-have-any-additional-responsibilities" id="markdown-toc-im-a-lead-reviewer-do-i-have-any-additional-responsibilities">I’m a lead reviewer. Do I have any additional responsibilities?</a>    <ul>
+      <li><a href="#during-the-review-process-1" id="markdown-toc-during-the-review-process-1">During the review process</a></li>
+      <li><a href="#once-the-design-has-been-approved-by-all-reviewers" id="markdown-toc-once-the-design-has-been-approved-by-all-reviewers">Once the design has been approved by all reviewers</a></li>
+      <li><a href="#to-reject-the-design" id="markdown-toc-to-reject-the-design">To reject the design</a></li>
+    </ul>
+  </li>
+  <li><a href="#what-is-a-significant-change" id="markdown-toc-what-is-a-significant-change">What is a significant change?</a></li>
+  <li><a href="#why-do-we-need-design-reviews" id="markdown-toc-why-do-we-need-design-reviews">Why do we need design reviews?</a></li>
+  <li><a href="#why-do-we-need-a-design-review-policy" id="markdown-toc-why-do-we-need-a-design-review-policy">Why do we need a design review policy?</a></li>
+</ul>
+
+<h2 id="when-do-i-need-a-design-document-and-review">When do I need a design document and review?</h2>
+
+<p>If you’re planning to add, change, or remove a user-facing feature, or make a
+significant architectural change to Bazel, you <strong>must</strong> write a design document
+and have it reviewed before you can submit the change. See <a href="#what-is-a-significant-change">What is a
+significant change?</a> for details.</p>
+
+<p>Implementation can begin before the proposal is accepted, for example as a
+proof-of-concept or an experimentation. However, you cannot submit the change
+before the review is complete.</p>
+
+<h2 id="workflow">Workflow</h2>
+
+<h3 id="write-the-design-document">Write the design document</h3>
+
+<p>All design documents must have a header that includes:</p>
+
+<ul>
+  <li>author</li>
+  <li>date of last major change</li>
+  <li>list of reviewers, including one (and only one) <a href="#how-to-choose-a-lead-reviewer">lead reviewer</a></li>
+  <li>current status (<em>draft</em>, <em>in review</em>, <em>approved</em>, <em>rejected</em>, <em>being implemented</em>, <em>implemented</em>)</li>
+  <li>link to discussion thread (<em>to be added after the announcement</em>)</li>
+</ul>
+
+<p>The document can be written either <a href="#using-google-docs">as a world-readable Google Doc</a>
+or <a href="#using-markdown">using Markdown</a>. Read below about for a
+<a href="#should-i-use-markdown-or-google-docs">Markdown / Google Docs comparison</a>.</p>
+
+<p>Proposals that have a user-visible impact must have a section documenting the
+impact on backward compatibility (and a rollout plan if needed).</p>
+
+<h3 id="create-a-pull-request">Create a Pull Request</h3>
+
+<p>The author creates a Pull Request (PR) to add the document to
+<a href="https://github.com/bazelbuild/proposals">the design index</a>. If
+the proposal is a Markdown file, the file is added in the same PR. Otherwise,
+the PR only adds a link.</p>
+
+<p>When possible, the author <a href="#how-to-choose-a-lead-reviewer">chooses a lead reviewer</a>.
+Other reviewers are cc’ed. If the author didn’t choose a lead reviewer, the
+Bazel sheriff will assign one, like for any other PR.</p>
+
+<p>Once the PR is sent, the reviewers can make some preliminary comments during the
+code review. For example, the lead reviewer can suggest extra reviewers, or
+point out missing information. The lead reviewer approves the PR when they
+believe the review process can start. It doesn’t mean the proposal is perfect or
+will be approved; it means that the proposal contains enough information to
+start the discussion.</p>
+
+<h3 id="announce-the-new-proposal">Announce the new proposal</h3>
+
+<p>Once the PR is submitted, the author sends an announcement to <a href="https://groups.google.com/forum/#!forum/bazel-dev">bazel-dev</a>.</p>
+
+<p>Other groups may be cc’ed (e.g. <a href="https://groups.google.com/forum/#!forum/bazel-discuss">bazel-discuss</a>,
+to get feedback from Bazel end-users).</p>
+
+<h3 id="iterate-with-reviewers">Iterate with reviewers</h3>
+
+<p>Anyone interested can chime in and comment on the proposal. The author should
+try to answer questions, clarify the proposal, and address the concerns.</p>
+
+<p>Discussion should happen on the announcement thread. If the document is a Google
+Doc, comments may be used instead (but note that anonymous comments are
+allowed).</p>
+
+<h3 id="update-the-status">Update the status</h3>
+
+<p>When the author believes the iteration round is complete, they send a new PR to
+update the status. The PR must be sent to the same lead reviewer and cc the
+other reviewers.</p>
+
+<p>The lead reviewer approves the PR to officially accept the proposal.
+It is the lead reviewer’s responsibility to ensure that other reviewers agree
+with the decision.</p>
+
+<p>There must be at least 1 week between the first announcement and the approval of
+a proposal. This ensures that users had enough time to read the document and
+share their concerns.</p>
+
+<h2 id="should-i-use-markdown-or-google-docs">Should I use Markdown or Google Docs?</h2>
+
+<p>Both are accepted. The author can decide what works best for them.</p>
+
+<p>Google Docs can be more effective for brainstorming, collaborative editing, and
+quick iteration. Suggested edits are also very valuable.</p>
+
+<p>Markdown files have some other benefits, including:</p>
+
+<ul>
+  <li>Clean URLs for linking.</li>
+  <li>Explicit record of revisions.</li>
+  <li>No forgetting to set up access rights before publicizing a link.</li>
+  <li>More easily searchable with search engines.</li>
+  <li>Future-proofness: plain text is not at the mercy of any specific tool,
+doesn’t require an Internet connection.</li>
+  <li>It is possible to update them even if the author is not around anymore.</li>
+  <li>They can be processed automatically (e.g. update/detect dead links, fetch
+list of authors, etc.).</li>
+</ul>
+
+<p>It is also possible to first iterate on a Google Doc, and then convert it to
+Markdown for posterity.</p>
+
+<h2 id="using-google-docs">Using Google Docs</h2>
+
+<p>Create a world-readable document on <a href="https://docs.google.com">Google Doc</a>. To
+make it world-readable, click on “Share”, “Advanced”, then “Change…”, and
+choose “On - Anyone with the link”. You may allow comments on the document. If
+you do so, anyone will be able to comment anonymously, even without a Google
+account.</p>
+
+<p>We recommend that you use <a href="https://docs.google.com/document/d/1cE5zrjrR40RXNg64XtRFewSv6FrLV6slGkkqxBumS1w/edit">this template</a>
+for new documents. It will help you structure the document and create a visual
+consistency with other Bazel related documents. To do that, click on “Make a
+copy” under the “File” menu.</p>
+
+<h2 id="using-markdown">Using Markdown</h2>
+
+<p>Documents are stored on GitHub and use the GitHub flavor of Markdown
+(<a href="https://guides.github.com/features/mastering-markdown/">overview</a>,
+<a href="https://github.github.com/gfm/">specification</a>).</p>
+
+<p>Send a PR to update an existing document. Significant changes should be reviewed
+by the document reviewers. Trivial changes (e.g. typos, formatting) can be
+approved by anyone.</p>
+
+<h2 id="how-to-choose-a-lead-reviewer">How to choose a lead reviewer?</h2>
+
+<p>The lead reviewer is a domain expert. Lead reviewers must be:</p>
+
+<ul>
+  <li>Knowledgeable of the relevant subsystems</li>
+  <li>Objective (i.e., capable of providing constructive feedback)</li>
+  <li>Available for the entire review period to lead the process</li>
+</ul>
+
+<h2 id="im-a-reviewer-what-are-my-responsibilities">I’m a reviewer. What are my responsibilities?</h2>
+
+<h3 id="when-you-receive-a-new-proposal">When you receive a new proposal</h3>
+
+<ul>
+  <li>Take a quick look at the document. Comment if critical information is
+missing, or if the design doesn’t fit with the goals of the project.</li>
+  <li>Suggest additional reviewers.</li>
+  <li>Approve the PR when it is ready for review.</li>
+</ul>
+
+<h3 id="during-the-review-process">During the review process</h3>
+
+<ul>
+  <li>Engage in a dialogue with the design author about issues that are
+problematic or require clarification.</li>
+  <li>If appropriate, invite comments from non-reviewers who should be aware of
+the design.</li>
+  <li>Decide which comments must be addressed by the author as a prerequisite to approval.</li>
+  <li>Write “LGTM” (<em>Looks Good To Me</em>) in the discussion thread when you are
+happy with the current state of the proposal.</li>
+</ul>
+
+<p>If you get a design review request, please make sure it followed this process.
+Do not approve designs affecting Bazel if they are not in the <a href="https://github.com/bazelbuild/proposals">design
+index</a>.</p>
+
+<h2 id="im-a-lead-reviewer-do-i-have-any-additional-responsibilities">I’m a lead reviewer. Do I have any additional responsibilities?</h2>
+
+<p>You’re ultimately responsible for making a go/no-go decision on implementation
+of a pending design. If you’re not able to do this, you should identify a
+suitable delegate (reassign the PR to the delegate), or reassign the bug to a
+Blaze manager for further disposition.</p>
+
+<h3 id="during-the-review-process-1">During the review process</h3>
+
+<ul>
+  <li>Ensure that the comment and design iteration process moves forward
+constructively.</li>
+  <li>Prior to approval, ensure that concerns from other reviewers have been
+resolved.</li>
+</ul>
+
+<h3 id="once-the-design-has-been-approved-by-all-reviewers">Once the design has been approved by all reviewers</h3>
+
+<ul>
+  <li>Make sure there has been at least 1 week since the announcement on a
+mailing-list.</li>
+  <li>Make sure the PR updates the status.</li>
+  <li>Approve the PR sent by the proposal author.</li>
+</ul>
+
+<h3 id="to-reject-the-design">To reject the design</h3>
+
+<ul>
+  <li>Make sure the PR author sends a PR; or send them a PR.</li>
+  <li>The PR updates the status of the document.</li>
+  <li>Add a comment to the document explaining why the design can’t be approved in
+its current state, and outlining next steps, if any (e.g., “revisit invalid
+assumptions and resubmit”).</li>
+</ul>
+
+<h2 id="what-is-a-significant-change">What is a significant change?</h2>
+
+<p>There are no hard and fast criteria, but here are some examples:</p>
+
+<ul>
+  <li>Addition or deletion of native build rules</li>
+  <li>Breaking-changes to native rules</li>
+  <li>Changes to a native build rule semantics that affect the behavior of more
+than a single rule</li>
+  <li>Changes to Bazel’s rule definition API</li>
+  <li>Changes to the APIs that Bazel uses to connect to other systems</li>
+  <li>Changes to the Starlark language, semantics, or APIs</li>
+  <li>Changes that could have a pervasive effect on Bazel performance or memory
+usage (for better or for worse)</li>
+  <li>Changes to widely used internal APIs</li>
+  <li>Changes to flags and command-line interface.</li>
+</ul>
+
+<p>When a proposal adds, removes, or modifies any function or object available in
+BUILD, WORKSPACE, or bzl files, the <a href="../maintainers-guide.html">Starlark team</a>
+has to be in the reviewers list.</p>
+
+<h2 id="why-do-we-need-design-reviews">Why do we need design reviews?</h2>
+
+<ul>
+  <li>Bazel is a very complex system; seemingly innocuous local changes can have
+significant global consequences.</li>
+  <li>The team gets many feature requests from users; such requests need to be
+evaluated not only for technical feasibility but importance with regards to
+other feature requests.</li>
+  <li>Bazel features are frequently implemented by people outside the core team;
+such contributors have widely varying levels of Bazel expertise.</li>
+  <li>The Bazel team itself has varying levels of expertise; no single team member
+has a complete understanding of every corner of Bazel.</li>
+  <li>Changes to Bazel must account for backward compatibility and avoid breaking
+changes.</li>
+</ul>
+
+<h2 id="why-do-we-need-a-design-review-policy">Why do we need a design review policy?</h2>
+
+<ul>
+  <li>To maximize the likelihood that all feature requests get a baseline level of
+scrutiny.</li>
+  <li>To maximize the likelihood that the right people will weigh in on designs
+before we’ve invested in an implementation that may not work.</li>
+</ul>
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: Design Documents&body=Documentation URL: https://docs.bazel.build/designs/&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#when-do-i-need-a-design-document-and-review">When do I need a design document and review?</a></li>
+<li class="toc-entry toc-h2"><a href="#workflow">Workflow</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#write-the-design-document">Write the design document</a></li>
+<li class="toc-entry toc-h3"><a href="#create-a-pull-request">Create a Pull Request</a></li>
+<li class="toc-entry toc-h3"><a href="#announce-the-new-proposal">Announce the new proposal</a></li>
+<li class="toc-entry toc-h3"><a href="#iterate-with-reviewers">Iterate with reviewers</a></li>
+<li class="toc-entry toc-h3"><a href="#update-the-status">Update the status</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#should-i-use-markdown-or-google-docs">Should I use Markdown or Google Docs?</a></li>
+<li class="toc-entry toc-h2"><a href="#using-google-docs">Using Google Docs</a></li>
+<li class="toc-entry toc-h2"><a href="#using-markdown">Using Markdown</a></li>
+<li class="toc-entry toc-h2"><a href="#how-to-choose-a-lead-reviewer">How to choose a lead reviewer?</a></li>
+<li class="toc-entry toc-h2"><a href="#im-a-reviewer-what-are-my-responsibilities">I’m a reviewer. What are my responsibilities?</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#when-you-receive-a-new-proposal">When you receive a new proposal</a></li>
+<li class="toc-entry toc-h3"><a href="#during-the-review-process">During the review process</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#im-a-lead-reviewer-do-i-have-any-additional-responsibilities">I’m a lead reviewer. Do I have any additional responsibilities?</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#during-the-review-process-1">During the review process</a></li>
+<li class="toc-entry toc-h3"><a href="#once-the-design-has-been-approved-by-all-reviewers">Once the design has been approved by all reviewers</a></li>
+<li class="toc-entry toc-h3"><a href="#to-reject-the-design">To reject the design</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#what-is-a-significant-change">What is a significant change?</a></li>
+<li class="toc-entry toc-h2"><a href="#why-do-we-need-design-reviews">Why do we need design reviews?</a></li>
+<li class="toc-entry toc-h2"><a href="#why-do-we-need-a-design-review-policy">Why do we need a design review policy?</a></li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>

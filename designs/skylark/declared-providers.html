@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Declared Providers - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/designs/skylark/declared-providers.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="Declared Providers">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <h1 id="design-document-declared-providers">Design Document: Declared Providers</h1>
+
+<p><strong>Design documents are not descriptions of the current functionality of Skylark.
+Always go to the documentation for current information.</strong></p>
+
+<p><strong>Status:</strong> Approved</p>
+
+<p><strong>Authors:</strong> <a href="mailto:dslomov@google.com">Dmitry Lomov</a>,
+<a href="mailto:laurentlb@google.com">Laurent Le Brun</a></p>
+
+<p><strong>Design document published</strong>: 2016-06-06</p>
+
+<h2 id="motivation">Motivation</h2>
+
+<p>Skylark rules use simple Skylark structs as their providers. Skylark providers
+are identified as simple names, such as ‘java’ or ‘files’. This approach has the
+advantage of simplicity, but as the number and complexity of Skylark rules grow,
+we run into engineering scalability problems:</p>
+
+<ul>
+  <li>Using simple names for providers might lead to name conflicts (when
+unrelated rules call their providers the same simple name).</li>
+  <li>There is no clear formal way to add documentation for those providers; if
+any, the documentation is in prose in rule’s doc comment, where it tends to
+become obsolete/incomplete; most existing providers have no documentation
+explaining their contracts at all.</li>
+  <li>It’s hard to know which fields to expect in a provider.</li>
+  <li>It’s hard to know which rule can depend on which rule.</li>
+</ul>
+
+<h2 id="goals">Goals</h2>
+
+<ul>
+  <li>Solve name-conflict problem for providers</li>
+  <li>Allow to specify providers in Skylark rules with the same level of
+robustness as other components of the language, such as rules and aspects</li>
+  <li>Enable the same or better documentability of Skylark providers as native
+providers allow</li>
+  <li>Improve providers interoperability with native code.</li>
+</ul>
+
+<h2 id="proposal">Proposal</h2>
+
+<p>We propose a redesign of how Skylark rules deal with providers to address the
+above concerns. The redesign can occur in stages; those stages represent
+implementation stages, but allow Skylark users to gradually opt for “more and
+more engineering” as their custom rules progress from a small project on the
+side to a public release.</p>
+
+<p>Our proposal is backwards compatible with the existing providers in Bazel and
+allows easy, gradual piecemeal replacement of them.</p>
+
+<h3 id="stage-1-solving-the-naming-problem">Stage 1: Solving the Naming Problem</h3>
+
+<p>Under the new proposal, a minimum implementation of a custom provider looks like
+this:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># rust.bzl
+
+# Introduces a provider. `rust_provider` is now both a function
+# that can be used to construct the provider instance,
+# and a "symbol" that can be used to access it.
+rust_provider = provider()
+
+def _impl(ctx):
+  # `rust_provider` is used as struct-like constructor
+  # it accepts the same arguments as a standard `struct` function
+  rust = rust_provider(defines = "-DFOO", ...)
+  # return value of rule implementation function
+  # is just a list of providers; their "names" are specified
+  # by their constructors, see below
+  return [ctx.provider(files = ...), rust]
+rust_library = rule(implementation = _impl,
+  # Optional declaration; the rule MUST provide all the
+  # providers in this list
+  providers = [rust_provider])
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Example of how to access the provider
+
+load(":rust.bzl", "rust_provider")
+
+def _impl(ctx):
+  dep = ctx.attr.deps[0] # Target object
+  # `rust_provider` is used as a key to access a particular
+  # provider
+  defines = dep[rust_provider].defines ...
+</code></pre></div></div>
+
+<h4 id="the-provider-function">The provider function</h4>
+
+<ul>
+  <li>We introduce two new kinds of Skylark values, a <em>provider declaration</em> and a
+<em>provider</em>.</li>
+  <li>Provider declaration (<code class="highlighter-rouge">rust_provider</code> in the example) is created using the
+<code class="highlighter-rouge">provider</code> function.</li>
+  <li>Provider declaration can be used to construct a <em>provider</em> (<code class="highlighter-rouge">rust</code> in the
+example). Provider is a struct-like Skylark value, with the only difference
+that every provider is associated with its declaration (it is a different
+type). Arguments of a provider declaration when used as a function are
+exactly the same as that of a built-in <code class="highlighter-rouge">struct</code> function.</li>
+  <li><a href="http://www.bazel.build/docs/skylark/lib/Target.html">Target</a> objects become
+dictionaries of providers indexed by their declaration. Bracket notation can
+be used to retrieve a particular provider. Thus, provider declarations are
+<a href="https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/Symbol">symbol-like</a>
+values.</li>
+  <li>Providers can be private to an extension file; in that case the provider
+cannot be accessed outside that file.</li>
+</ul>
+
+<h4 id="default-providers-ctxprovider">Default providers (ctx.provider)</h4>
+
+<p>There is a set of default providers (<code class="highlighter-rouge">files</code>, <code class="highlighter-rouge">runfiles</code>, <code class="highlighter-rouge">data_runfiles</code>,
+<code class="highlighter-rouge">executable</code>, <code class="highlighter-rouge">output_groups</code>, etc.). We group them in a single provider,
+<code class="highlighter-rouge">ctx.provider</code>:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>defaults = ctx.provider(files = set(), runfiles = ...)
+</code></pre></div></div>
+
+<p>The current set of APIs on Target objects that access these providers
+(<code class="highlighter-rouge">target.files</code>, <code class="highlighter-rouge">target.output_group("name")</code> etc.) will continue to work.</p>
+
+<h4 id="return-value">Return value</h4>
+
+<p>The implementation function can return either a provider, or a list of
+providers. It is an error to return two providers of the same type.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>return [defaults, rust, cc]
+return ctx.provider(files = set())
+</code></pre></div></div>
+
+<h4 id="declaring-providers-returned-by-a-rule">Declaring providers returned by a rule</h4>
+
+<p>Users need to know which rules provide which providers. This is important for
+documentation and for knowing which dependencies are allowed (e.g. we want to
+find easily what can go in the deps attribute of cc_library).</p>
+
+<p>We allow rules to declare the providers they intend to return with a <code class="highlighter-rouge">providers</code>
+argument of a
+<code>[rule](http://www.bazel.build/docs/skylark/lib/globals.html#rule)</code>
+function. It is an error if the rule implementation function does not return all
+the providers listed in <code class="highlighter-rouge">providers</code>. It may however return additional providers.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rust_provider = provider()
+
+rust_library = rule(implementation = _impl,
+  # Optional declaration; the rule MUST provide all the
+  # providers in this list
+  providers = [rust_provider])
+</code></pre></div></div>
+
+<h4 id="migration-path-and-support-for-legacy-providers">Migration path and support for “legacy” providers</h4>
+
+<p>To support current model of returning providers, where they are identified by a
+simple name, we continue to allow providers name in the return struct:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def _impl(ctx):
+  ...
+  return struct(
+    legacy_provider = struct(...),
+    files = set(...),
+    providers = [rust])
+</code></pre></div></div>
+
+<p>This also works for “default” providers, such as “files”, “runfiles” etc.
+However if one of those legacy names is specified, it is an error to have
+ctx.provider instance in the list of <code class="highlighter-rouge">providers</code>.</p>
+
+<p>We also allow returning a declared provider both directly and with a simple
+name:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>def _impl(ctx):
+  ...
+  return struct(rust = rust, providers = [rust])
+</code></pre></div></div>
+
+<p>This allows the rules to mix old and new style, and migrate rule definition to a
+new style without changing all the uses of that rule.</p>
+
+<p>Old-style providers with simple names can still be accessed with dot-notation on
+Target object, so all of the following is valid.</p>
+
+<p>Old-style usage:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">target.rust</code> (=&gt; rust)</li>
+  <li><code class="highlighter-rouge">getattr(target, "rust")</code> (=&gt; rust)</li>
+  <li><code class="highlighter-rouge">hasattr(target, "rust")</code> (=&gt; True)</li>
+</ul>
+
+<p>New-style usage:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">target[rust_provider]</code> (=&gt; rust)</li>
+  <li><code class="highlighter-rouge">rust_provider in target</code> (=&gt; True)</li>
+  <li><code class="highlighter-rouge">target.keys</code> (=&gt; [rust_provider])</li>
+  <li><code class="highlighter-rouge">target.values</code> (=&gt; [rust])</li>
+  <li><code class="highlighter-rouge">target.items</code> (=&gt; [(rust_provider, rust)])</li>
+</ul>
+
+<h4 id="type-function">type function</h4>
+
+<p>Type function on providers returns a string <code class="highlighter-rouge">"provider"</code>. Type function on a
+provider instance returns a string <code class="highlighter-rouge">"struct"</code>.</p>
+
+<h3 id="stage-2-documentation-and-fields">Stage 2: Documentation and Fields</h3>
+
+<p>Provider declarations are a convenient place to add more annotations to
+providers. We propose 2 specific things there:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rust_provider = provider(
+  doc = "This provider contains Rust information ...",
+  fields = ["defines", "transitive_deps"]
+)
+</code></pre></div></div>
+
+<p>This specifies documentation for the provider and a list of fields that the
+provider can have.</p>
+
+<p>If <code class="highlighter-rouge">fields</code> argument is present, extra, undeclared fields are not allowed.</p>
+
+<p>Both <code class="highlighter-rouge">doc</code> and <code class="highlighter-rouge">fields</code> arguments to <code class="highlighter-rouge">provider</code> function are optional.</p>
+
+<p><code class="highlighter-rouge">fields</code> argument can also be a dictionary (from string to string), in that case
+the keys are names of fields, and the values are documentation strings about
+individual fields</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rust_provider = provider(
+  doc = "This provider contains Rust information ...",
+  fields = {
+    "defines": "doc for define",
+    "transitive_deps": "doc for transitive deps,
+  })
+</code></pre></div></div>
+
+<h3 id="native-providers">Native Providers</h3>
+
+<p>Providers (as Skylark values) can be also declared natively. A set of
+annotations can be developed to facilitate declaring them with little effort.</p>
+
+<p>As a strawman example:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/**
+ * Hypothetical implementation of Skylark provider value (result of
+ * provider(..) function.
+ */
+class SkylarkProviderValue extends SkylarkValue {
+  ...
+  /**
+   * Creates a SkylarkProviderValue for a native provider
+   * `native` must be annotated with @SkylarkProvider annotation.
+   * Field accessors and constructor function appear magically.
+   */
+  static &lt;T&gt; SkylarkProviderValue forNative(Class&lt;T&gt; native) { ... }
+}
+
+@SkylarkProvider(builder = Builder.class)
+// A class with this annotation can be used as provider declaration
+class rustProvider implements TransitiveInfoProvider {
+  @SkylarkProviderField(doc = ...)
+  // Skylark name is 'defines'
+  String getDefines() { ... }
+
+  @SkylarkProviderField(doc = ...)
+  // Skylark name is 'transitive_deps'
+  NestedSet&lt;Artifact&gt; getTransitiveDeps() { ... }
+
+  @SkylarkProviderField(doc = ...)
+  // Not allowed, the set of types exposed to Skylark is restricted
+  DottedVersion getVersion() { ... }
+
+  // Automatically used to provide an implementation for
+  // construction function.
+  static class Builder {
+    // a setter for 'defines' field, based on name.
+    void setDefines(String defines) { ... }
+    // a setter for 'transitive_deps' field, based on name.
+    void setTransitiveDeps(...) {...}
+    rustProvider build() { ... }
+  }
+}
+</code></pre></div></div>
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: Declared Providers&body=Documentation URL: https://docs.bazel.build/designs/skylark/declared-providers.html&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#motivation">Motivation</a></li>
+<li class="toc-entry toc-h2"><a href="#goals">Goals</a></li>
+<li class="toc-entry toc-h2"><a href="#proposal">Proposal</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#stage-1-solving-the-naming-problem">Stage 1: Solving the Naming Problem</a></li>
+<li class="toc-entry toc-h3"><a href="#stage-2-documentation-and-fields">Stage 2: Documentation and Fields</a></li>
+<li class="toc-entry toc-h3"><a href="#native-providers">Native Providers</a></li>
+</ul>
+</li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>

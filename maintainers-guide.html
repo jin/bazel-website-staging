@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Guide for Bazel Maintainers - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/maintainers-guide.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="Guide for Bazel Maintainers">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <h1 id="guide-for-bazel-maintainers">Guide for Bazel Maintainers</h1>
+
+<h2 class="no_toc" id="table-of-contents">Table of Contents</h2>
+
+<ul id="markdown-toc">
+  <li><a href="#overview" id="markdown-toc-overview">Overview</a></li>
+  <li><a href="#releases" id="markdown-toc-releases">Releases</a></li>
+  <li><a href="#continuous-integration" id="markdown-toc-continuous-integration">Continuous Integration</a></li>
+  <li><a href="#lifecycle-of-an-issue" id="markdown-toc-lifecycle-of-an-issue">Lifecycle of an Issue</a></li>
+  <li><a href="#lifecycle-of-a-pull-request" id="markdown-toc-lifecycle-of-a-pull-request">Lifecycle of a Pull Request</a></li>
+  <li><a href="#initial-routing" id="markdown-toc-initial-routing">Initial routing</a></li>
+  <li><a href="#my-team-owns-a-label-what-should-i-do" id="markdown-toc-my-team-owns-a-label-what-should-i-do">My team owns a label. What should I do?</a>    <ul>
+      <li><a href="#issues" id="markdown-toc-issues">Issues</a></li>
+      <li><a href="#pull-requests" id="markdown-toc-pull-requests">Pull Requests</a></li>
+    </ul>
+  </li>
+  <li><a href="#priority" id="markdown-toc-priority">Priority</a></li>
+  <li><a href="#team-labels" id="markdown-toc-team-labels">Team labels</a></li>
+</ul>
+
+<h2 id="overview">Overview</h2>
+
+<p>This is a guide for the maintainers of the Bazel open source project.</p>
+
+<p>If you are looking to contribute to Bazel, please read <a href="/contributing.html">Contributing to
+Bazel</a> instead.</p>
+
+<p>The objectives of this document are to:</p>
+
+<ol>
+  <li>Serve as the maintainers’ source of truth for the project’s contribution
+process.</li>
+  <li>Set expectations between the community contributors and the project
+maintainers.</li>
+</ol>
+
+<p>Bazel’s <a href="/governance.html">core group of contributors</a> has dedicated subteams to
+manage aspects of the open source project. These are:</p>
+
+<ul>
+  <li><strong>User Onboarding</strong>: Improve the experience for new Bazel users, and help them
+get started.</li>
+  <li><strong>Release Process</strong>: Manage Bazel’s release process.</li>
+  <li><strong>Green Team</strong>: Grow a healthy ecosystem of rules and tools.</li>
+  <li><strong>Developer Experience</strong>: Encourage external contributions, make our
+development workflow more open, and shift the team towards GitHub-first
+development.</li>
+</ul>
+
+<h2 id="releases">Releases</h2>
+
+<ul>
+  <li><a href="https://github.com/bazelbuild/continuous-integration/blob/master/docs/release-playbook.md">Release Playbook</a></li>
+  <li><a href="https://github.com/bazelbuild/continuous-integration/blob/master/docs/downstream-testing.md">Testing local changes with downstream projects</a></li>
+</ul>
+
+<h2 id="continuous-integration">Continuous Integration</h2>
+
+<p>Read the Green team’s guide to Bazel’s CI infrastructure on the
+<a href="https://github.com/bazelbuild/continuous-integration/blob/master/buildkite/README.md">bazelbuild/continuous-integration</a>
+repository.</p>
+
+<h2 id="lifecycle-of-an-issue">Lifecycle of an Issue</h2>
+
+<ol>
+  <li>A user creates an issue using the <a href="https://github.com/bazelbuild/bazel/blob/master/ISSUE_TEMPLATE.md">Issue
+Template</a>
+and it enters the pool of <a href="https://github.com/bazelbuild/bazel/issues?utf8=%E2%9C%93&amp;q=is%3Aissue+is%3Aopen+-label%3Auntriaged+-label%3Ap2+-label%3Ap1+-label%3Ap3+-label%3Ap4+-label%3Ateam-Starlark+-label%3Ateam-Rules-CPP+-label%3Ateam-Rules-Java+-label%3Ateam-Engprod++-label%3Ateam-Execution+-label%3Ateam-Product+-label%3Ateam-Android+-label%3Ateam-Apple+-label%3Ateam-ExternalDeps+-label%3Ateam-Configurability++-label%3Ateam-Performance+-label%3Ateam-EngProd++-label%3Ateam-Rules-Server+-label%3Ateam-Windows">unreviewed open
+issues</a>.</li>
+  <li>A member on the Developer Experience (DevEx) subteam rotation reviews the
+issue.</li>
+  <li>If the issue is <strong>not a bug</strong> or a <strong>feature request</strong>, the DevEx member
+will close the issue and redirect the user to
+<a href="https://stackoverflow.com/questions/tagged/bazel">StackOverflow</a> and
+<a href="https://groups.google.com/forum/#!forum/bazel-discuss">bazel-discuss</a> for
+higher visibility on the question.</li>
+  <li>If the issue is vague or has missing information, the DevEx member will
+assign the issue back to the user to request for more information before
+continuing. This usually occurs when the user does not follow the <a href="https://github.com/bazelbuild/bazel/blob/master/ISSUE_TEMPLATE.md">Issue
+Template</a>.</li>
+  <li>After reviewing the issue, the DevEx member decides if the issue requires
+immediate attention. If it does, they will assign the <strong>P0</strong>
+<a href="#priority">priority</a> label and an owner from the list of team leads.</li>
+  <li>The DevEx member assigns the <code class="highlighter-rouge">untriaged</code> label and exactly one <a href="#team-labels">team
+label</a> for routing.</li>
+  <li>The DevEx member also assigns the <code class="highlighter-rouge">bug</code> or <code class="highlighter-rouge">feature request</code> label according
+to the type of the issue.</li>
+</ol>
+
+<p>At this stage, the issue enters the pool of <a href="https://github.com/bazelbuild/bazel/issues?q=is%3Aissue+is%3Aopen+label%3Auntriaged">untriaged open
+issues</a>.</p>
+
+<p>Each Bazel subteam will triage all issues under labels they own, preferably on a
+weekly basis. The subteam will review and evaluate the issue and provide a
+resolution, if possible. If you are a owner of a team label, see <a href="maintainers-guide.html#my-team-owns-a-label-what-should-i-do">this section
+</a> for more
+information.</p>
+
+<p>When an issue is resolved, it can be closed.</p>
+
+<h2 id="lifecycle-of-a-pull-request">Lifecycle of a Pull Request</h2>
+
+<ol>
+  <li>A user creates a pull request.</li>
+  <li>If you a member of a Bazel team and sending a PR against your own area,
+you are responsible for assigning your team label and finding the best
+reviewer.</li>
+  <li>Otherwise, during daily triage, a DevEx member assigns one
+<a href="#team-labels">team label</a> and the team’s technical lead (TL) for routing.
+    <ol>
+      <li>The TL may optionally assign someone else to review the PR.</li>
+    </ol>
+  </li>
+  <li>The assigned reviewer reviews the PR and works with the author until it is
+approved or dropped.</li>
+  <li>If approved, the reviewer <strong>imports</strong> the PR’s commit(s) into Google’s
+internal version control system for further tests. As Bazel is the same build
+system used internally at Google, we need to test all PR commits against the
+internal test suite. This is the reason why we do not merge PRs directly.</li>
+  <li>If the imported commit passes all internal tests, the commit will be squashed
+and exported back out to GitHub.</li>
+  <li>When the commit merges into master, GitHub automatically closes the PR.</li>
+</ol>
+
+<h2 id="initial-routing">Initial routing</h2>
+
+<p>When someone opens a new issue or pull request (PR) on Bazel’s GitHub
+repository, it needs to be routed to the appropriate owners for <strong>triaging</strong>.</p>
+
+<p>For a large project like Bazel, routing issues and PRs in a timely manner has
+many benefits, including:</p>
+
+<ol>
+  <li>Acknowledging the contributor’s time and effort to open an issue or PR.</li>
+  <li>Maximizing the visibility of the issue or PR towards domain experts.</li>
+  <li>Reducing the maintainers’ toil on sifting through the large volume of issues
+and PRs.</li>
+</ol>
+
+<p>When an issue or PR is routed to the correct owner, the owner can address and
+prioritize the issue accordingly.</p>
+
+<p>The Developer Experience (DevEx) subteam handles the initial routing of issues
+and PRs on weekly rotation basis. The subteam can be reached on GitHub using the
+<code class="highlighter-rouge">@bazelbuild/devex</code> alias.</p>
+
+<p>Routed issues <strong>must have</strong>:</p>
+
+<ol>
+  <li>a <code class="highlighter-rouge">team</code> label, e.g. <code class="highlighter-rouge">team-Starlark</code></li>
+  <li>either the <code class="highlighter-rouge">untriaged</code> label OR one priority label (<code class="highlighter-rouge">p0</code>, <code class="highlighter-rouge">p1</code>, <code class="highlighter-rouge">p2</code>, <code class="highlighter-rouge">p3</code>, <code class="highlighter-rouge">p4</code>), but not both.</li>
+</ol>
+
+<p>The exceptions to this are issues for tracking releases and incompatible changes.</p>
+
+<p>See the list of issues to be routed
+<a href="https://github.com/bazelbuild/bazel/issues?utf8=%E2%9C%93&amp;q=is%3Aissue+is%3Aopen+-label%3Ap1+-label%3Ap2+-label%3Ap3+-label%3Ap4+-label%3Auntriaged+-label%3Ap0+-label%3Arelease+-label%3Aincompatible-change">here</a>.</p>
+
+<h2 id="my-team-owns-a-label-what-should-i-do">My team owns a label. What should I do?</h2>
+
+<p>Subteams need to triage all issues in the <a href="#team-labels">labels they own</a>,
+preferable on a weekly basis.</p>
+
+<h3 id="issues">Issues</h3>
+
+<ol>
+  <li>Filter the list of issues by your team label <strong>and</strong> the <code class="highlighter-rouge">untriaged</code> label.</li>
+  <li>Review the issue.</li>
+  <li>Identify a <a href="#priority">priority level</a> and assign the label.</li>
+  <li>The issue may have already been prioritized by the DevEx subteam if it’s a
+P0. Re-prioritize if needed.</li>
+  <li>Remove the <code class="highlighter-rouge">untriaged</code> label.</li>
+</ol>
+
+<p>Note that you need to be in the <a href="https://github.com/bazelbuild">bazelbuild
+organization</a> to be able to add or remove labels.</p>
+
+<h3 id="pull-requests">Pull Requests</h3>
+
+<ol>
+  <li>Filter the list of pull requests by your team label.</li>
+  <li>Review open pull requests.</li>
+  <li><strong>Optional</strong>: If you are assigned for the review but is not the right fit
+  for it, re-assign the appropriate reviewer to perform a code review.</li>
+  <li>Work with the pull request creator to complete a code review.</li>
+  <li>Approve the PR.</li>
+  <li>Ensure that all tests pass.</li>
+  <li>Import the patch to the internal version control system and run the internal
+presubmits.</li>
+  <li>Submit the internal patch. If the patch submits and exports successfully, the
+PR will be closed automatically by GitHub.</li>
+</ol>
+
+<h2 id="priority">Priority</h2>
+
+<p>The following definitions for priority will be used by the maintainers to triage
+issues.</p>
+
+<ul>
+  <li><strong>P0</strong> - Major broken functionality that causes a Bazel release (minus release
+candidates) to be unusable, or a downed service that severely impacts
+development of the Bazel project. This includes regressions introduced in a
+new release that blocks a significant number of users, or an incompatible
+breaking change that was not compliant to the <a href="https://docs.google.com/document/d/1q5GGRxKrF_mnwtaPKI487P8OdDRh2nN7jX6U-FXnHL0/edit?pli=1#heading=h.ceof6vpkb3ik">Breaking
+Change</a>
+policy. No practical workaround exists.</li>
+  <li><strong>P1</strong> - Critical defect or feature which should be addressed in the next
+release, or a serious issue that impacts many users (including the development
+of the Bazel project), but a practical workaround exists. Typically does not
+require immediate action. In high demand and planned in the current quarter’s
+roadmap.</li>
+  <li><strong>P2</strong> - Defect or feature that is tied to roadmaps or upcoming releases.
+Moderate live issue in a released Bazel version that is inconvenient for a
+user that needs to be addressed in an upcoming release and/or a easy workaround
+exists.</li>
+  <li><strong>P3</strong> - Desirable minor bug fix or enhancement with small impact. Not
+prioritized into Bazel roadmaps or any imminent release. May never be fixed.</li>
+  <li><strong>P4</strong> - Low priority defect or feature request that is unlikely to get
+closed. Can also be kept open for a potential re-prioritization if more users
+are impacted.</li>
+</ul>
+
+<h2 id="team-labels">Team labels</h2>
+
+<ul>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Android"><code class="highlighter-rouge">team-Android</code></a>: Issues for Android team
+    <ul>
+      <li>Contact: <a href="https://github.com/ahumesky">ahumesky</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Apple"><code class="highlighter-rouge">team-Apple</code></a>: Issues for Apple team (also MacOS, iOS etc)
+    <ul>
+      <li>Contact: <a href="https://github.com/jmmv">jmmv</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Bazel"><code class="highlighter-rouge">team-Bazel</code></a>: General Bazel product/strategy issues
+    <ul>
+      <li>Contact: <a href="https://github.com/sventiffe">sventiffe</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Configurability"><code class="highlighter-rouge">team-Configurability</code></a>: Issues for Configurability team
+    <ul>
+      <li>Contact: <a href="https://github.com/gregestren">gregestren</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Core"><code class="highlighter-rouge">team-Core</code></a>: Issues for Core team
+    <ul>
+      <li>Contact: <a href="https://github.com/janakdr">janakdr</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Engprod"><code class="highlighter-rouge">team-EngProd</code></a>: Issues for EngProd team (CI, release, distribution)
+    <ul>
+      <li>Contact: <a href="https://github.com/philwo">philwo</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-ExternalDeps"><code class="highlighter-rouge">team-ExternalDeps</code></a>: Issues for External Deps team (remote repositories,
+WORKSPACE file)
+    <ul>
+      <li>Contact: <a href="https://github.com/laurentlb">laurentlb</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Front-End"><code class="highlighter-rouge">team-Front-End</code></a>: Issues for the Bazel Front End team
+    <ul>
+      <li>Contact: <a href="https://github.com/laurentlb">laurentlb</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Local-Exec"><code class="highlighter-rouge">team-Local-Exec</code></a>: Issues for Execution (Local) team
+    <ul>
+      <li>Contact: <a href="https://github.com/jmmv">jmmv</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Performance"><code class="highlighter-rouge">team-Performance</code></a>: Issues for Bazel Performance team
+    <ul>
+      <li>Contact: <a href="https://github.com/meisterT">meisterT</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Remote-Exec"><code class="highlighter-rouge">team-Remote-Exec</code></a>: Issues for Execution (Remote) team
+    <ul>
+      <li>Contact: ?</li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Rules-CPP"><code class="highlighter-rouge">team-Rules-CPP</code></a>: Issues for C++ rules
+    <ul>
+      <li>Contact: <a href="https://github.com/lberki">lberki</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Rules-Java"><code class="highlighter-rouge">team-Rules-Java</code></a>: Issues for Java rules
+    <ul>
+      <li>Contact: <a href="https://github.com/lberki">lberki</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Rules-Python"><code class="highlighter-rouge">team-Rules-Python</code></a>: Issues for the native Python rules
+    <ul>
+      <li>Contact: <a href="https://github.com/lberki">lberki</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Rules-Server"><code class="highlighter-rouge">team-Rules-Server</code></a>: Issues for serverside rules included with Bazel
+    <ul>
+      <li>Contact: <a href="https://github.com/lberki">lberki</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Starlark"><code class="highlighter-rouge">team-Starlark</code></a>: Issues for Starlark language + Build API
+    <ul>
+      <li>Contact: <a href="https://github.com/laurentlb">laurentlb</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-Windows"><code class="highlighter-rouge">team-Windows</code></a>: Issues for Windows team
+    <ul>
+      <li>Contact: <a href="https://github.com/meteorcloudy">meteorcloudy</a></li>
+    </ul>
+  </li>
+  <li><a href="https://github.com/bazelbuild/bazel/labels/team-XProduct"><code class="highlighter-rouge">team-XProduct</code></a>: Issues for Product Excellence team: installation, Bazel packaging, website, command line processing
+    <ul>
+      <li>Contact: <a href="https://github.com/philwo">philwo</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p>For new issues, we deprecated the <code class="highlighter-rouge">category: *</code> labels in favor of the team labels.</p>
+
+<p>See the full list of labels <a href="https://github.com/bazelbuild/bazel/labels">here</a>.</p>
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: Guide for Bazel Maintainers&body=Documentation URL: https://docs.bazel.build/maintainers-guide.html&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#overview">Overview</a></li>
+<li class="toc-entry toc-h2"><a href="#releases">Releases</a></li>
+<li class="toc-entry toc-h2"><a href="#continuous-integration">Continuous Integration</a></li>
+<li class="toc-entry toc-h2"><a href="#lifecycle-of-an-issue">Lifecycle of an Issue</a></li>
+<li class="toc-entry toc-h2"><a href="#lifecycle-of-a-pull-request">Lifecycle of a Pull Request</a></li>
+<li class="toc-entry toc-h2"><a href="#initial-routing">Initial routing</a></li>
+<li class="toc-entry toc-h2"><a href="#my-team-owns-a-label-what-should-i-do">My team owns a label. What should I do?</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#issues">Issues</a></li>
+<li class="toc-entry toc-h3"><a href="#pull-requests">Pull Requests</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#priority">Priority</a></li>
+<li class="toc-entry toc-h2"><a href="#team-labels">Team labels</a></li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>

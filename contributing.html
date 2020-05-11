@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Contributing to Bazel - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/contributing.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="Contributing to Bazel">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <h1 id="contributing-to-bazel">Contributing to Bazel</h1>
+
+<h2 id="how-can-i-help">How can I help?</h2>
+
+<p>There are many ways to help the Bazel project and ecosystem.</p>
+
+<ol>
+  <li>Provide feedback as you use Bazel. As you use it, you may find things
+that can be improved. Please report them:
+    <ul>
+      <li>Report bugs. In particular, it’s important to report any crash or
+correctness bug.</li>
+      <li>Report issues when the documentation is incomplete or unclear.</li>
+      <li>Report issues when an error message could be improved.</li>
+    </ul>
+  </li>
+  <li>As you get experienced with Bazel, engage with the community:
+    <ul>
+      <li>Answer questions <a href="https://stackoverflow.com/questions/tagged/bazel">on Stack Overflow</a>.</li>
+      <li>Help other users <a href="https://slack.bazel.build">on Slack</a>.</li>
+      <li>Improve the documentation or <a href="https://github.com/bazelbuild/examples">contribute examples</a>.</li>
+      <li>Share your experience or your tips, for example on a blog or social media.</li>
+    </ul>
+  </li>
+  <li>Contribute to the Bazel ecosystem:
+    <ul>
+      <li>Help rules maintainers by contributing pull requests.</li>
+      <li>Create new rules and open-source them.</li>
+      <li>Contribute to Bazel-related tools, for example migration tools.</li>
+      <li>Improve Bazel integration with other IDEs and tools.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2 id="how-can-i-contribute-to-bazel-source-code">How can I contribute to Bazel source code?</h2>
+
+<p>Bazel is a large project and making a significant change to Bazel source code
+can be difficult. Please check with us on the <a href="https://groups.google.com/forum/#!forum/bazel-dev">dev list</a> or on a GitHub issue before
+investing a lot of time in a patch.</p>
+
+<p>In general, we prefer contributions that fix bugs or add features (as opposed to
+stylistic, refactoring, or “cleanup” changes). When making a change, please
+include tests and documentation, and keep in mind backward-compatibility,
+portability, as well as the impact on memory usage and performance.</p>
+
+<h3 id="patch-acceptance-process">Patch Acceptance Process</h3>
+
+<ol>
+  <li>Read the <a href="governance.html">Bazel governance plan</a>.</li>
+  <li>Discuss your plan and design, and get agreement on a GitHub issue or our
+<a href="https://groups.google.com/forum/#!forum/bazel-dev">mailing list</a>.
+Significant changes need a <a href="designs/index.html">design document</a>.</li>
+  <li>Prepare a git commit that implements the feature. Don’t forget to add tests.</li>
+  <li>Ensure you’ve signed a <a href="https://cla.developers.google.com">Contributor License
+Agreement</a>.</li>
+  <li>Send us a pull request on
+<a href="https://github.com/bazelbuild/bazel/pulls">GitHub</a>. If you’re new to GitHub,
+read <a href="https://help.github.com/articles/about-pull-requests/">about pull
+requests</a>. Note that
+we restrict permissions to create branches on the main Bazel repository, so
+you will need to push your commit to <a href="https://help.github.com/articles/working-with-forks/">your own fork of the
+repository</a>.</li>
+  <li>Wait for a Bazel team member to assign you a reviewer. It should be done in 2
+business days (excluding holidays in the USA and Germany). If you do not get
+a reviewer within that time frame, you can ask for one by sending a mail to
+<a href="mailto:bazel-dev@googlegroups.com">bazel-dev@googlegroups.com</a>.</li>
+  <li>Work with the reviewer to complete a code review. For each change, create a
+new commit and push it to make changes to your pull request. If the review
+takes too long (e.g. reviewer is unresponsive), please also send an email to
+<a href="mailto:bazel-dev@googlegroups.com">bazel-dev@googlegroups.com</a>.</li>
+  <li>A Bazel maintainer at Google will apply the patch to our internal version
+control system. The patch is exported as a Git commit, at which point the
+GitHub pull request is closed.</li>
+</ol>
+
+<p>If your change has user-visible effects, consider <a href="release-notes.html">adding release
+notes</a>. If it is an incompatible change, read the <a href="breaking-changes-guide.html">guide for
+rolling out breaking changes</a>.</p>
+
+<h2 id="setting-up-your-coding-environment">Setting up your coding environment</h2>
+
+<p>For now we have support for IntelliJ. We don’t have IDE support for other
+languages in Bazel right now.</p>
+
+<h3 id="preparations">Preparations</h3>
+
+<ul>
+  <li><a href="https://bazel.build/versions/master/docs/install.html">Install Bazel</a> on your
+system. Note that for developing Bazel, you need the latest released version
+of Bazel.</li>
+  <li>Clone Bazel’s Git repository from GitHub:
+    <ul>
+      <li><code class="highlighter-rouge">git clone https://github.com/bazelbuild/bazel.git</code></li>
+    </ul>
+  </li>
+  <li>Try to build Bazel:
+    <ul>
+      <li>
+        <p>On Linux/macOS, in Bash/Terminal:</p>
+
+        <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cd bazel
+bazel build //src:bazel
+</code></pre></div>        </div>
+      </li>
+      <li>
+        <p>On Windows, in the Command Prompt:</p>
+
+        <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cd bazel
+bazel --output_user_root=c:\tmp build //src:bazel.exe
+</code></pre></div>        </div>
+
+        <p>For faster iteration times (but larger binaries), use <code class="highlighter-rouge">//src:bazel-dev.exe</code> instead.</p>
+      </li>
+    </ul>
+  </li>
+  <li>This will produce a working Bazel binary in <code class="highlighter-rouge">bazel-bin/src/bazel</code> (or <code class="highlighter-rouge">bazel-bin/src/bazel.exe</code> on Windows).</li>
+</ul>
+
+<h3 id="creating-an-intellij-project">Creating an IntelliJ project</h3>
+
+<p>To work with IntelliJ:</p>
+
+<ul>
+  <li>Install Bazel’s <a href="https://ij.bazel.build">IntelliJ plug-in</a>.</li>
+  <li>Set the path to the Bazel binary in the plugin preferences
+(<code class="highlighter-rouge">Preferences</code> &gt; <code class="highlighter-rouge">Other Settings</code> &gt; <code class="highlighter-rouge">Bazel Settings</code>).</li>
+  <li>Import the Bazel workspace as a Bazel project
+(<code class="highlighter-rouge">File</code> &gt; <code class="highlighter-rouge">Import Bazel Project...</code>) with the following settings:
+    <ul>
+      <li>Use existing Bazel workspace: choose your cloned Git repository.</li>
+      <li>Select <code class="highlighter-rouge">Import from workspace</code> and choose the <code class="highlighter-rouge">scripts/ij.bazelproject</code>
+file as the <code class="highlighter-rouge">Project view</code>.</li>
+    </ul>
+  </li>
+  <li>Download <a href="https://github.com/google/styleguide/blob/gh-pages/intellij-java-google-style.xml">Google’s Java Code Style Scheme file for IntelliJ</a>,
+import it (go to <code class="highlighter-rouge">Preferences</code> &gt; <code class="highlighter-rouge">Editor</code> &gt; <code class="highlighter-rouge">Code Style</code> &gt; <code class="highlighter-rouge">Java</code>, click <code class="highlighter-rouge">Manage</code>, then <code class="highlighter-rouge">Import</code>)
+and use it when working on Bazel’s code.</li>
+</ul>
+
+<p><a name="compile-bazel"></a></p>
+<h3 id="compiling-bazel">Compiling Bazel</h3>
+
+<p>To test out Bazel, you need to compile it. To compile a development version of
+Bazel, you need a the latest released version of Bazel, which can be
+<a href="/versions/master/docs/install-compile-source.html">compiled from source</a>.</p>
+
+<p><code class="highlighter-rouge">bazel build //src:bazel</code> builds the Bazel binary using <code class="highlighter-rouge">bazel</code> from your PATH
+and the resulting binary can be found at <code class="highlighter-rouge">bazel-bin/src/bazel</code>. This is the
+recommended way of rebuilding Bazel once you have bootstrapped it.</p>
+
+<p>In addition to the Bazel binary, you might want to build the various tools Bazel
+uses. They are located in <code class="highlighter-rouge">//src/java_tools/...</code>, <code class="highlighter-rouge">//src/objc_tools/...</code> and
+<code class="highlighter-rouge">//src/tools/...</code> and their directories contain README files describing their
+respective utility.</p>
+
+<p>When modifying Bazel, you want to make sure that the following still works:</p>
+
+<ul>
+  <li>Build a distribution archive with <code class="highlighter-rouge">bazel build //:bazel-distfile</code>. After
+unzipping it in a new empty directory, run <code class="highlighter-rouge">bash compile.sh all</code> there.
+It rebuilds Bazel with <code class="highlighter-rouge">./compile.sh</code>, Bazel with the
+<code class="highlighter-rouge">compile.sh</code> Bazel and Bazel with the Bazel-built binary. It compares if the
+constructed Bazel builts are identical and then runs all Bazel tests with
+<code class="highlighter-rouge">bazel test //src/... //third_party/ijar/...</code>. This is what we use at Google
+to ensure that we don’t break Bazel when pushing new commits, too.</li>
+</ul>
+
+<h3 id="debugging-bazel">Debugging Bazel</h3>
+
+<p>Start creating a debug configuration for both C++ and Java in your <code class="highlighter-rouge">.bazelrc</code>
+with the following:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>build:debug -c dbg
+build:debug --javacopt="-g"
+build:debug --copt="-g"
+build:debug --strip="never"
+</code></pre></div></div>
+
+<p>Then you can rebuild Bazel with <code class="highlighter-rouge">bazel build --config debug //src:bazel</code> and use
+your favorite debugger to start debugging.</p>
+
+<p>For debugging the C++ client you can just run it from gdb or lldb as you normally would.
+But if you want to debug the Java code, you must attach to the server using the following:</p>
+
+<ul>
+  <li>Run Bazel with debugging option <code class="highlighter-rouge">--host_jvm_debug</code> before the
+command (e.g., <code class="highlighter-rouge">bazel --host_jvm_debug build //src:bazel</code>).</li>
+  <li>Attach a debugger to the port 5005. With <code class="highlighter-rouge">jdb</code> for instance,
+run <code class="highlighter-rouge">jdb -attach localhost:5005</code>.</li>
+  <li>Our IntelliJ plugin has built-in
+  <a href="https://ij.bazel.build/docs/run-configurations.html">debugging support</a></li>
+</ul>
+
+<h2 id="bazels-code-description">Bazel’s code description</h2>
+
+<p>Bazel is organized in several parts:</p>
+
+<ul>
+  <li>Client code in <code class="highlighter-rouge">src/main/cpp</code> provides the command-line interface.</li>
+  <li>Protocol buffers in <code class="highlighter-rouge">src/main/protobuf</code>.</li>
+  <li>Server code in <code class="highlighter-rouge">src/main/java</code> and <code class="highlighter-rouge">src/test/java</code>.
+    <ul>
+      <li>Core code which is mostly composed of <a href="designs/skyframe.html">SkyFrame</a> and some
+  utilities.</li>
+      <li>Builtin rules in <code class="highlighter-rouge">com.google.devtools.build.lib.rules</code> and in
+  <code class="highlighter-rouge">com.google.devtools.build.lib.bazel.rules</code>. You might want to read about
+  the <a href="docs/rule-challenges.html">Challenges of Writing Rules</a> first.</li>
+    </ul>
+  </li>
+  <li>Java native interfaces in <code class="highlighter-rouge">src/main/native</code>.</li>
+  <li>Various tooling for language support (see the list in the
+<a href="#compile-bazel">compiling Bazel</a> section).</li>
+</ul>
+
+<h2 id="searching-bazels-source-code">Searching Bazel’s source code</h2>
+
+<p>To quickly search through Bazel’s source code, use <a href="https://source.bazel.build/">Bazel Code Search</a>. You can navigate Bazel’s repositories, branches, and files. You can also view history, diffs, and blame information. To learn more, see the
+<a href="https://www.bazel.build/browse-and-search-user-guide.html">Bazel Code Search User Guide</a>.</p>
+
+<h2 id="using-bazel-continuous-integration">Using Bazel Continuous Integration</h2>
+
+<p>To get started with the Bazel CI system, see <a href="https://github.com/bazelbuild/continuous-integration/blob/master/buildkite/README.md">Bazel Continuous Integration</a>. To monitor the tests and builds of your Bazel contributions, use the <a href="https://ci.bazel.build/">Bazel CI Dashboard</a>.</p>
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: Contributing to Bazel&body=Documentation URL: https://docs.bazel.build/contributing.html&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#how-can-i-help">How can I help?</a></li>
+<li class="toc-entry toc-h2"><a href="#how-can-i-contribute-to-bazel-source-code">How can I contribute to Bazel source code?</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#patch-acceptance-process">Patch Acceptance Process</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#setting-up-your-coding-environment">Setting up your coding environment</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#preparations">Preparations</a></li>
+<li class="toc-entry toc-h3"><a href="#creating-an-intellij-project">Creating an IntelliJ project</a></li>
+<li class="toc-entry toc-h3"><a href="#compiling-bazel">Compiling Bazel</a></li>
+<li class="toc-entry toc-h3"><a href="#debugging-bazel">Debugging Bazel</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#bazels-code-description">Bazel’s code description</a></li>
+<li class="toc-entry toc-h2"><a href="#searching-bazels-source-code">Searching Bazel’s source code</a></li>
+<li class="toc-entry toc-h2"><a href="#using-bazel-continuous-integration">Using Bazel Continuous Integration</a></li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>

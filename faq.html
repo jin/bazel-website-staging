@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FAQ - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/faq.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="FAQ">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    
+    <div class="page-title-bar">
+      <div class="container">
+        <h1>FAQ</h1>
+      </div>
+    </div>
+    
+
+    <div class="container">
+      <p>If you have questions or need help, see the <a href="support.html">Get Support</a> page.</p>
+
+<h2 id="what-is-bazel">What is Bazel?</h2>
+
+<p>Bazel is a tool that automates software builds and tests. Supported build tasks
+include running compilers and linkers to produce executable programs and
+libraries, and assembling deployable packages for Android, iOS and other target
+environments. Bazel is similar to other tools like Make, Ant, Gradle, Buck,
+Pants and Maven.</p>
+
+<h2 id="what-is-special-about-bazel">What is special about Bazel?</h2>
+
+<p>Bazel was designed to fit the way software is developed at Google. It
+has the following features:</p>
+
+<ul>
+  <li>
+    <p>Multi-language support: Bazel supports <a href="/docs/be/overview.html">many languages</a>,
+and can be extended to support arbitrary programming languages.</p>
+  </li>
+  <li>
+    <p>High-level build language: Projects are described in the BUILD
+language, a concise text format that describes a project as sets of
+small interconnected libraries, binaries and tests. In contrast, with
+tools like Make, you have to describe individual files and compiler
+invocations.</p>
+  </li>
+  <li>
+    <p>Multi-platform support: The same tool and the same BUILD files can
+be used to build software for different architectures, and even
+different platforms.  At Google, we use Bazel to build everything from
+server applications running on systems in our data centers to client apps
+running on mobile phones.</p>
+  </li>
+  <li>
+    <p>Reproducibility: In BUILD files, each library, test and binary must
+specify its direct dependencies completely.  Bazel uses this
+dependency information to know what must be rebuilt when you make
+changes to a source file, and which tasks can run in parallel.  This
+means that all builds are incremental and will always produce the
+same result.</p>
+  </li>
+  <li>
+    <p>Scalable: Bazel can handle large builds; at Google, it is common for
+a server binary to have 100k source files, and builds where no files
+were changed take about ~200ms.</p>
+  </li>
+</ul>
+
+<h2 id="why-doesnt-google-use-">Why doesn’t Google use …?</h2>
+
+<ul>
+  <li>
+    <p>Make, Ninja: These tools give very exact control over what commands
+get invoked to build files, but it’s up to the user to write rules
+that are correct.</p>
+
+    <p>Users interact with Bazel on a higher level. For example, Bazel has
+built-in rules for “Java test”, “C++ binary”, and notions such as
+“target platform” and “host platform”. These rules have been battle
+tested to be foolproof.</p>
+  </li>
+  <li>
+    <p>Ant and Maven: Ant and Maven are primarily geared toward Java, while
+Bazel handles multiple languages.  Bazel encourages subdividing
+codebases in smaller reusable units, and can rebuild only ones that
+need rebuilding. This speeds up development when working with larger
+codebases.</p>
+  </li>
+  <li>
+    <p>Gradle: Bazel configuration files are much more structured than
+Gradle’s, letting Bazel understand exactly what each action does.
+This allows for more parallelism and better reproducibility.</p>
+  </li>
+  <li>
+    <p>Pants, Buck: Both tools were created and developed by ex-Googlers at
+Twitter and Foursquare, and Facebook respectively. They have been modeled
+after Bazel, but their feature sets are different, so they aren’t viable
+alternatives for us.</p>
+  </li>
+</ul>
+
+<h2 id="where-did-bazel-come-from">Where did Bazel come from?</h2>
+
+<p>Bazel is a flavor of the tool that Google uses to build its server
+software internally. It has expanded to build other software as well,
+like mobile apps (iOS, Android) that connect to our servers.</p>
+
+<h2 id="did-you-rewrite-your-internal-tool-as-open-source-is-it-a-fork">Did you rewrite your internal tool as open-source? Is it a fork?</h2>
+
+<p>Bazel shares most of its code with the internal tool and its rules
+are used for millions of builds every day.</p>
+
+<h2 id="why-did-google-build-bazel">Why did Google build Bazel?</h2>
+
+<p>A long time ago, Google built its software using large, generated
+Makefiles. These led to slow and unreliable builds, which began to
+interfere with our developers’ productivity and the company’s
+agility. Bazel was a way to solve these problems.</p>
+
+<h2 id="does-bazel-require-a-build-cluster">Does Bazel require a build cluster?</h2>
+
+<p>Bazel runs build operations locally by default. However, Bazel can
+also connect to a build cluster for even faster builds and tests.
+See our documentation on <a href="https://docs.bazel.build/versions/master/remote-execution.html">remote execution</a>
+and <a href="https://docs.bazel.build/versions/master/remote-execution.html">remote caching</a>
+for further details.</p>
+
+<h2 id="how-does-the-google-development-process-work">How does the Google development process work?</h2>
+
+<p>For our server code base, we use the following development workflow:</p>
+
+<ul>
+  <li>
+    <p>All our server code is in a single, gigantic version control
+system.</p>
+  </li>
+  <li>
+    <p>Everybody builds their software with Bazel.</p>
+  </li>
+  <li>
+    <p>Different teams own different parts of the source tree, and make
+their components available as BUILD targets.</p>
+  </li>
+  <li>
+    <p>Branching is primarily used for managing releases, so everybody
+develops their software at the head revision.</p>
+  </li>
+</ul>
+
+<p>Bazel is a cornerstone of this philosophy: since Bazel requires all
+dependencies to be fully specified, we can predict which programs and
+tests are affected by a change, and vet them before submission.</p>
+
+<p>More background on the development process at Google can be found on
+the <a href="http://google-engtools.blogspot.com/">eng tools blog</a>.</p>
+
+<h2 id="why-did-you-open-up-bazel">Why did you open up Bazel?</h2>
+
+<p>Building software should be fun and easy. Slow and unpredictable
+builds take the fun out of programming.</p>
+
+<h2 id="why-would-i-want-to-use-bazel">Why would I want to use Bazel?</h2>
+
+<ul>
+  <li>
+    <p>Bazel may give you faster build times because it can recompile only
+the files that need to be recompiled. Similarly, it can skip
+re-running tests that it knows haven’t changed.</p>
+  </li>
+  <li>
+    <p>Bazel produces deterministic results. This eliminates skew
+between incremental and clean builds, laptop and CI system, etc.</p>
+  </li>
+  <li>
+    <p>Bazel can build different client and server apps with the same tool
+from the same workspace. For example, you can change a client/server
+protocol in a single commit, and test that the updated mobile app
+works with the updated server, building both with the same tool,
+reaping all the aforementioned benefits of Bazel.</p>
+  </li>
+</ul>
+
+<h2 id="can-i-see-examples">Can I see examples?</h2>
+
+<p>Yes. For a simple example, see:</p>
+
+<p><a href="https://github.com/bazelbuild/bazel/blob/master/examples/cpp/BUILD">https://github.com/bazelbuild/bazel/blob/master/examples/cpp/BUILD</a></p>
+
+<p>The Bazel source code itself provides a more complex example:</p>
+
+<p><a href="https://github.com/bazelbuild/bazel/blob/master/src/BUILD">https://github.com/bazelbuild/bazel/blob/master/src/BUILD</a></p>
+
+<h2 id="what-is-bazel-best-at">What is Bazel best at?</h2>
+
+<p>Bazel shines at building and testing projects with the following properties:</p>
+
+<ul>
+  <li>Projects with a large codebase</li>
+  <li>Projects written in (multiple) compiled languages</li>
+  <li>Projects that deploy on multiple platforms</li>
+  <li>Projects that have extensive tests</li>
+</ul>
+
+<h2 id="where-can-i-run-bazel">Where can I run Bazel?</h2>
+
+<p>Bazel runs on Linux, macOS (OS X), and Windows.</p>
+
+<p>Porting to other UNIX platforms should be relatively easy, as long as a JDK is
+available for the platform.</p>
+
+<h2 id="what-should-i-not-use-bazel-for">What should I not use Bazel for?</h2>
+
+<ul>
+  <li>
+    <p>Bazel tries to be smart about caching. This means that it is not good
+for running build operations whose outputs should not be cached. For example,
+the following steps should not be run from Bazel:</p>
+
+    <ul>
+      <li>A compilation step that fetches data from the internet.</li>
+      <li>A test step that connects to the QA instance of your site.</li>
+      <li>A deployment step that changes your site’s cloud configuration.</li>
+    </ul>
+  </li>
+  <li>
+    <p>If your build consists of a few long, sequential steps, Bazel may not be able to help much. You’ll get more speed by breaking long steps into smaller, discrete targets that Bazel can run in parallel.</p>
+  </li>
+</ul>
+
+<h2 id="how-stable-is-bazels-feature-set">How stable is Bazel’s feature set?</h2>
+
+<p>The core features (C++, Java, and shell rules) have extensive use
+inside Google, so they are thoroughly tested and have very little
+churn.  Similarly, we test new versions of Bazel across hundreds of
+thousands of targets every day to find regressions, and we release new
+versions multiple times every month.</p>
+
+<p>In short, except for features marked as experimental, Bazel should Just Work.
+Changes to non-experimental rules will be backward compatible. A more detailed
+list of feature support statuses can be found in our
+<a href="support.html">support document</a>.</p>
+
+<h2 id="how-stable-is-bazel-as-a-binary">How stable is Bazel as a binary?</h2>
+
+<p>Inside Google, we make sure that Bazel crashes are very rare. This
+should also hold for our open source codebase.</p>
+
+<h2 id="how-can-i-start-using-bazel">How can I start using Bazel?</h2>
+
+<p>See our <a href="https://docs.bazel.build/getting-started.html">getting started document</a>.</p>
+
+<h2 id="doesnt-docker-solve-the-reproducibility-problems">Doesn’t Docker solve the reproducibility problems?</h2>
+
+<p>With Docker you can easily create sandboxes with fixed OS releases,
+for example, Ubuntu 12.04, Fedora 21. This solves the problem of
+reproducibility for the system environment – that is, “which version of
+/usr/bin/c++ do I need?”</p>
+
+<p>Docker does not address reproducibility with regard to changes in the
+source code.  Running Make with an imperfectly written Makefile inside a
+Docker container can still yield unpredictable results.</p>
+
+<p>Inside Google, we check tools into source control for reproducibility.
+In this way, we can vet changes to tools (“upgrade GCC to 4.6.1”) with
+the same mechanism as changes to base libraries (“fix bounds check in
+OpenSSL”).</p>
+
+<h2 id="can-i-build-binaries-for-deployment-on-docker">Can I build binaries for deployment on Docker?</h2>
+
+<p>With Bazel, you can build standalone, statically linked binaries in
+C/C++, and self-contained jar files for Java. These run with few
+dependencies on normal UNIX systems, and as such should be simple to
+install inside a Docker container.</p>
+
+<p>Bazel has conventions for structuring more complex programs, for example, a
+Java program that consumes a set of data files, or runs another
+program as subprocess. It is possible to package up such environments
+as standalone archives, so they can be deployed on different systems,
+including Docker images.</p>
+
+<h2 id="can-i-build-docker-images-with-bazel">Can I build Docker images with Bazel?</h2>
+
+<p>Yes, you can use our
+<a href="https://github.com/bazelbuild/rules_docker">Docker rules</a>
+to build reproducible Docker images.</p>
+
+<h2 id="will-bazel-make-my-builds-reproducible-automatically">Will Bazel make my builds reproducible automatically?</h2>
+
+<p>For Java and C++ binaries, yes, assuming you do not change the
+toolchain. If you have build steps that involve custom recipes
+(for example, executing binaries through a shell script inside a rule), you
+will need to take some extra care:</p>
+
+<ul>
+  <li>
+    <p>Do not use dependencies that were not declared. Sandboxed
+execution (–spawn_strategy=sandboxed, only on Linux) can
+help find undeclared dependencies.</p>
+  </li>
+  <li>
+    <p>Avoid storing timestamps and user-IDs in generated files. ZIP files and
+other archives are especially prone to this.</p>
+  </li>
+  <li>
+    <p>Avoid connecting to the network. Sandboxed execution can help here
+too.</p>
+  </li>
+  <li>
+    <p>Avoid processes that use random numbers, in particular, dictionary
+traversal is randomized in many programming languages.</p>
+  </li>
+</ul>
+
+<h2 id="do-you-have-binary-releases">Do you have binary releases?</h2>
+
+<p>Yes, you can find the latest release binaries
+<a href="https://github.com/bazelbuild/bazel/releases/latest">here</a>. Our release
+policy is documented <a href="http://bazel.build/support.html">here</a>.</p>
+
+<h2 id="i-use-eclipseintellijxcode-how-does-bazel-interoperate-with-ides">I use Eclipse/IntelliJ/XCode. How does Bazel interoperate with IDEs?</h2>
+
+<p>For IntelliJ, check out the <a href="https://ij.bazel.build">IntelliJ with Bazel plugin</a>.</p>
+
+<p>For XCode, check out <a href="http://tulsi.bazel.build/">Tulsi</a>.</p>
+
+<p>For Eclipse, check out <a href="https://github.com/bazelbuild/e4b">E4B plugin</a>.</p>
+
+<p>For other IDEs, check out the <a href="https://blog.bazel.build/2016/06/10/ide-support.html">blog
+post</a> on how these
+plugins work.</p>
+
+<h2 id="i-use-jenkinscirclecitravisci-how-does-bazel-interoperate-with-ci-systems">I use Jenkins/CircleCI/TravisCI. How does Bazel interoperate with CI systems?</h2>
+
+<p>Bazel returns a non-zero exit code if the build or test invocation
+fails, and this should be enough for basic CI integration.  Since
+Bazel does not need clean builds for correctness, the CI system should not
+be configured to clean before starting a build/test run.</p>
+
+<p>Further details on exit codes are in the <a href="docs/bazel-user-manual.html">User Manual</a>.</p>
+
+<h2 id="what-future-features-can-we-expect-in-bazel">What future features can we expect in Bazel?</h2>
+
+<p>See our <a href="roadmap.html">roadmap</a>.</p>
+
+<h2 id="can-i-use-bazel-for-my-insert-language-here-project">Can I use Bazel for my [INSERT LANGUAGE HERE] project?</h2>
+
+<p>Bazel is extensible. Anyone can add support for new languages. Many languages
+are supported, see the <a href="/docs/be/overview.html#additional-rules">build encyclopedia</a>
+for a list of recommendations and <a href="https://awesomebazel.com/">https://awesomebazel.com/</a>
+for a more comprehensive list.</p>
+
+<p>If you would like to develop extensions or learn how they work, see the documentation for <a href="/docs/skylark/index.html">extending Bazel</a>.</p>
+
+<h2 id="can-i-contribute-to-the-bazel-code-base">Can I contribute to the Bazel code base?</h2>
+
+<p>See our <a href="contributing.html">contribution guidelines</a>.</p>
+
+<h2 id="why-isnt-all-development-done-in-the-open">Why isn’t all development done in the open?</h2>
+
+<p>We still have to refactor the interfaces between the public code in
+Bazel and our internal extensions frequently. This makes it hard to do
+much development in the open. See our <a href="governance.html">governance plan</a>
+for more details.</p>
+
+<h2 id="how-do-i-contact-the-team">How do I contact the team?</h2>
+
+<p>We are reachable at <a href="mailto:bazel-discuss@googlegroups.com">bazel-discuss@googlegroups.com</a>.</p>
+
+<h2 id="where-do-i-report-bugs">Where do I report bugs?</h2>
+
+<p>Open on issue <a href="https://github.com/bazelbuild/bazel/issues">on GitHub</a>.</p>
+
+<h2 id="whats-up-with-the-word-blaze-in-the-codebase">What’s up with the word “Blaze” in the codebase?</h2>
+
+<p>This is an internal name for the tool. Please refer to Bazel as
+Bazel.</p>
+
+<h2 id="why-do-other-google-projects-android-chrome-use-other-build-tools">Why do other Google projects (Android, Chrome) use other build tools?</h2>
+
+<p>Until the first (Alpha) release, Bazel was not available externally, so open
+source projects such as Chromium, Android, etc. could not use it. In addition,
+the original lack of Windows support was a problem for building Windows
+applications, such as Chrome.</p>
+
+<h2 id="how-do-you-pronounce-bazel">How do you pronounce “Bazel”?</h2>
+
+<p>The same way as “basil” (the herb) in US English: “BAY-zel”. It rhymes with
+“hazel”. IPA: /ˈbeɪzˌəl/</p>
+
+
+      <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#what-is-bazel">What is Bazel?</a></li>
+<li class="toc-entry toc-h2"><a href="#what-is-special-about-bazel">What is special about Bazel?</a></li>
+<li class="toc-entry toc-h2"><a href="#why-doesnt-google-use-">Why doesn’t Google use …?</a></li>
+<li class="toc-entry toc-h2"><a href="#where-did-bazel-come-from">Where did Bazel come from?</a></li>
+<li class="toc-entry toc-h2"><a href="#did-you-rewrite-your-internal-tool-as-open-source-is-it-a-fork">Did you rewrite your internal tool as open-source? Is it a fork?</a></li>
+<li class="toc-entry toc-h2"><a href="#why-did-google-build-bazel">Why did Google build Bazel?</a></li>
+<li class="toc-entry toc-h2"><a href="#does-bazel-require-a-build-cluster">Does Bazel require a build cluster?</a></li>
+<li class="toc-entry toc-h2"><a href="#how-does-the-google-development-process-work">How does the Google development process work?</a></li>
+<li class="toc-entry toc-h2"><a href="#why-did-you-open-up-bazel">Why did you open up Bazel?</a></li>
+<li class="toc-entry toc-h2"><a href="#why-would-i-want-to-use-bazel">Why would I want to use Bazel?</a></li>
+<li class="toc-entry toc-h2"><a href="#can-i-see-examples">Can I see examples?</a></li>
+<li class="toc-entry toc-h2"><a href="#what-is-bazel-best-at">What is Bazel best at?</a></li>
+<li class="toc-entry toc-h2"><a href="#where-can-i-run-bazel">Where can I run Bazel?</a></li>
+<li class="toc-entry toc-h2"><a href="#what-should-i-not-use-bazel-for">What should I not use Bazel for?</a></li>
+<li class="toc-entry toc-h2"><a href="#how-stable-is-bazels-feature-set">How stable is Bazel’s feature set?</a></li>
+<li class="toc-entry toc-h2"><a href="#how-stable-is-bazel-as-a-binary">How stable is Bazel as a binary?</a></li>
+<li class="toc-entry toc-h2"><a href="#how-can-i-start-using-bazel">How can I start using Bazel?</a></li>
+<li class="toc-entry toc-h2"><a href="#doesnt-docker-solve-the-reproducibility-problems">Doesn’t Docker solve the reproducibility problems?</a></li>
+<li class="toc-entry toc-h2"><a href="#can-i-build-binaries-for-deployment-on-docker">Can I build binaries for deployment on Docker?</a></li>
+<li class="toc-entry toc-h2"><a href="#can-i-build-docker-images-with-bazel">Can I build Docker images with Bazel?</a></li>
+<li class="toc-entry toc-h2"><a href="#will-bazel-make-my-builds-reproducible-automatically">Will Bazel make my builds reproducible automatically?</a></li>
+<li class="toc-entry toc-h2"><a href="#do-you-have-binary-releases">Do you have binary releases?</a></li>
+<li class="toc-entry toc-h2"><a href="#i-use-eclipseintellijxcode-how-does-bazel-interoperate-with-ides">I use Eclipse/IntelliJ/XCode. How does Bazel interoperate with IDEs?</a></li>
+<li class="toc-entry toc-h2"><a href="#i-use-jenkinscirclecitravisci-how-does-bazel-interoperate-with-ci-systems">I use Jenkins/CircleCI/TravisCI. How does Bazel interoperate with CI systems?</a></li>
+<li class="toc-entry toc-h2"><a href="#what-future-features-can-we-expect-in-bazel">What future features can we expect in Bazel?</a></li>
+<li class="toc-entry toc-h2"><a href="#can-i-use-bazel-for-my-insert-language-here-project">Can I use Bazel for my [INSERT LANGUAGE HERE] project?</a></li>
+<li class="toc-entry toc-h2"><a href="#can-i-contribute-to-the-bazel-code-base">Can I contribute to the Bazel code base?</a></li>
+<li class="toc-entry toc-h2"><a href="#why-isnt-all-development-done-in-the-open">Why isn’t all development done in the open?</a></li>
+<li class="toc-entry toc-h2"><a href="#how-do-i-contact-the-team">How do I contact the team?</a></li>
+<li class="toc-entry toc-h2"><a href="#where-do-i-report-bugs">Where do I report bugs?</a></li>
+<li class="toc-entry toc-h2"><a href="#whats-up-with-the-word-blaze-in-the-codebase">What’s up with the word “Blaze” in the codebase?</a></li>
+<li class="toc-entry toc-h2"><a href="#why-do-other-google-projects-android-chrome-use-other-build-tools">Why do other Google projects (Android, Chrome) use other build tools?</a></li>
+<li class="toc-entry toc-h2"><a href="#how-do-you-pronounce-bazel">How do you pronounce “Bazel”?</a></li>
+</ul>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+    <!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+  </body>
+</html>

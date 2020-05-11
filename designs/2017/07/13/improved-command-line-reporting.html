@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Improved Command Line Reporting - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/designs/2017/07/13/improved-command-line-reporting.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="Improved Command Line Reporting">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <h1 id="design-document-improved-command-line-reporting-in-bazel">Design Document: Improved command line reporting in Bazel</h1>
+
+<p><strong>Design documents are not descriptions of the current functionality of Bazel.
+Always go to the documentation for current information.</strong></p>
+
+<p><strong>Status</strong>: In Progress.</p>
+
+<p><strong>Author</strong>: <a href="mailto:ccalvarin@google.com">Chloe Calvarin</a></p>
+
+<p><strong>Design document published</strong>: 13 July 2017</p>
+
+<h2 id="background">Background</h2>
+
+<p>Currently, there is no good way for a Bazel user to get the command line that 
+initiated a build, if they do not have access to the terminal history.</p>
+
+<p>The GotOptionsEvent tracks some of the necessary information, and this 
+information is starting to be used in Bazel by the BuildEventProtocol 
+(BEP, see the proto definition in 
+https://github.com/bazelbuild/bazel/blob/master/src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.proto, 
+for context). However, the contents of the OptionsParsed proto message, which 
+come from this GotOptionsEvent, are insufficient for the reconstruction of the
+user’s command line, and are occasionally incorrect.</p>
+
+<p>The output information in the BEP is currently as follows:</p>
+
+<div class="language-proto highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">message</span> <span class="nc">OptionsParsed</span> <span class="p">{</span>
+  <span class="k">repeated</span> <span class="kt">string</span> <span class="na">startup_options</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="k">repeated</span> <span class="kt">string</span> <span class="na">explicit_startup_options</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+  <span class="k">repeated</span> <span class="kt">string</span> <span class="na">cmd_line</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+  <span class="k">repeated</span> <span class="kt">string</span> <span class="na">explicit_cmd_line</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+  <span class="n">blaze.invocation_policy.InvocationPolicy</span> <span class="na">invocation_policy</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>Startup options, the options that go before the command, are listed in two ways:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">startup_options</code> : The effective options, both those mentioned explicitly 
+and implicitly (say, in a bazelrc)</li>
+  <li><code class="highlighter-rouge">explicit_startup_options</code> : The explicit options, only those mentioned 
+explicitly on the command line.</li>
+</ul>
+
+<p>Command options are also listed in two ways:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">cmd_line</code> : The effective options. These include those listed explicitly 
+in the command line, but also have expansion flags expanded, those mentioned
+in bazelrc’s, and any alterations from the invocation policy.</li>
+  <li><code class="highlighter-rouge">explicit_cmd_line</code> : The explicit options listed on the command line.</li>
+</ul>
+
+<p>These lists of options are insufficient to mirror the full user input. The 
+executable, command, and targets are listed elsewhere, and the parts, if 
+recombined, do not accurately reflect what was provided by the user, since 
+they were never intended to be matching parts of the whole. It is also not 
+fully correct: startup options are not fully passed to the server for logging,
+and certain bazelrc features and OptionsParser features incorrectly lead to 
+either missing pieces or duplication in the list. These bugs are mostly edge 
+cases, and would likely not be a problem for the average use case, but if a 
+user is relying on this output, it can be incredibly confusing and difficult to
+debug discrepancies, and the fixes are non-trivial as they are deeply ingrained
+in the structure of the command line parsing.</p>
+
+<h2 id="goals">Goals</h2>
+
+<p>Basically, we want the following: the “literal” command line that was passed 
+by the user, and a “reproducible” command line, along with the amorphous 
+request of “any additional information that might help debug an issue”.</p>
+
+<p>Unfortunately, reproducibility isn’t achievable with just a command line, so we 
+will avoid getting distracted by this and remain focused on concrete 
+improvements.  Specifically, reproducibility isn’t a good goal for this effort 
+because it can mean many different things depending on the behavior 
+(or failure) that we want to reproduce, and it is affected by other factors,
+including the environment, source state, machine, user permissions, and others.
+The goal of the logged command lines is therefore to help get as close to this
+reproducibility promise as possible, without obfuscating the original intent of
+the user.</p>
+
+<p>The work outlined in this doc is for addressing the following concerns, for the
+greater purpose of improving how Bazel logs command lines:</p>
+
+<ul>
+  <li>
+    <p>No non-Bazel tools should be reconstructing the command line.</p>
+
+    <ul>
+      <li>Bazel should provide the command lines in a consistent format.</li>
+      <li>This format should be flexible to allow for future changes while 
+avoiding unnecessary repetition.</li>
+    </ul>
+  </li>
+  <li>
+    <p>The “full” command line, with bazelrc and invocation policy changes, can 
+often be overwhelming</p>
+
+    <ul>
+      <li>Bazel should make it easier to find the relevant information.</li>
+    </ul>
+  </li>
+  <li>
+    <p>The Bazel server does not have fully correct information about the command
+line.</p>
+
+    <ul>
+      <li>It needs access to the literal command line that was passed to the 
+client. Currently, particularly for startup options, this is not the 
+case.</li>
+      <li>If Bazel was invoked through a tool, and the original command line was 
+of interest to understand where the Bazel invocation came from, this
+needs to be passed to Bazel for logging.</li>
+      <li>The options parsing logic needs consistent and accurate information
+about where flags come from.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="non-goals">Non-Goals</h3>
+
+<p>The work outlined here does not aim to address the following:</p>
+
+<ul>
+  <li>
+    <p>Provide reproducible command lines. Giving more accurate command line
+information is a step towards better reproducibility, but is not sufficient.</p>
+
+    <ul>
+      <li>The command line is not sufficient when external information affects
+the build, including source state, binary version, environment variables,
+machine state, etc.</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="proposed-improvements---high-level-view">Proposed Improvements - High level view</h2>
+
+<p>Bazel should provide its own command lines in a structured way, addressing the
+issues with the current availability of information. Here is a list of the 
+command lines that should be trivially accessible from the BEP output.</p>
+
+<h3 id="more-command-lines">More command lines</h3>
+<!-- `1.` numbered list form with sublists with bullets is not working as 
+  intended, numbering them weirdly to keep the referenceability -->
+<ul>
+  <li>
+    <p>(1) Tool command line (not Bazel)</p>
+
+    <ul>
+      <li>the command line to the non-Bazel tool that triggered this whole thing. 
+(This is NOT a Bazel command line, and shouldn’t be structured as one.)</li>
+    </ul>
+  </li>
+  <li>
+    <p>(2) Explicit command line : <em>pre-client-processing</em></p>
+
+    <ul>
+      <li>This would be the command line as close as we can get it to how it was 
+written. For the startup options, that means including flags passed to 
+the client that are not passed as such to the server. This includes 
+–invocation_policy.</li>
+    </ul>
+  </li>
+  <li>
+    <p>(3) Effective, or canonical, command line : <em>post-server-processing</em></p>
+
+    <ul>
+      <li>post bazelrc &amp; post invocation policy, a command line that includes all 
+non-default flag values. This should be possible to copy paste to get 
+the same command line, and as such, Bazel should take care of preventing
+reapplication of any configuration files or flag-altering options such
+as invocation policy.</li>
+    </ul>
+  </li>
+  <li>
+    <p>(4) Filtered command line(s)</p>
+
+    <ul>
+      <li>
+        <p>providing boiled-down lists of flags that affects one aspect of the 
+invocation. For example,</p>
+
+        <ul>
+          <li>a “semantic” command line that includes only flags that change what 
+the correct build is.</li>
+          <li>a “behavioral” command line with flags that define Bazel’s 
+constraints about how to get there (jvm args, logging flags, 
+sandboxing, etc.)</li>
+        </ul>
+      </li>
+      <li>
+        <p>As there might be many possible filters we want to apply, we shouldn’t 
+try and guess what users will find useful, but provide the flag category
+information with the rest of the command line, with command lines 2 
+and 3. The user/tool can then filter them as needed.</p>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p>Note that none of these claims to be a “reproducible” command line. As stated 
+and explained above, that is not a goal of this effort. Some users would just 
+want the original command line to copy paste back into their terminal, which 
+could be type 1 (tool) or 2 (literal), or want the “equivalent” command line, 
+type 3. Type 4 becomes relevant if they want to isolate the settings which 
+caused a problem, filtering out the noise.</p>
+
+<h2 id="work-required">Work Required</h2>
+
+<h3 id="overview">Overview</h3>
+
+<p>There are a fair number of isolated changes that need to be made before we can
+provide new structured command lines as part of Bazel’s output. The following
+can be done in parallel:</p>
+
+<ul>
+  <li>To get command line 1, Bazel-invoking tools need to be able to pass Bazel 
+their command lines.</li>
+  <li>Refactoring the OptionsParser to maintain correct information about the
+initial and final states of the command line.</li>
+  <li>Passing the client arguments from the client to the server literally.</li>
+  <li>Adding the command line reporting structure to the Build Event Protocol 
+(BEP).</li>
+  <li>To filter command lines for command lines 4, we need better option 
+categorization.</li>
+</ul>
+
+<p>Tying everything together and reporting the command lines via the build event 
+stream would need to come last.</p>
+
+<p>Details for these are below.</p>
+
+<h3 id="passing-the-bazel-invoking-tools-command-line-to-the-server">Passing the Bazel-invoking tool’s command line to the server</h3>
+
+<p>A <code class="highlighter-rouge">--summoning_command</code> command option will serve to accept the original tool’s
+command line. It will accept one of two types of values: [1] a compiled proto 
+containing the list of strings that represents the calling executable’s argv[],
+or [2] a single string.</p>
+
+<p>This can quickly become an unbounded dance - “what about (the tool that 
+invoked)* Bazel?” We are intentionally not going to support this. Flags are 
+not a great tool for extended information passing, and while there are ways to 
+do it, it raises questions of ordering and correctness that we will not address 
+here. Bazel will accept 1 value to this flag, for the purpose of helping users 
+understand the origin of the output, not to keep an unbounded log of everything 
+that ever led to an invocation. If additional logging is needed, it might be 
+worth adding state somewhere outside of a flag value.</p>
+
+<h4 id="alternative-formats-considered">Alternative formats considered</h4>
+
+<p>Passing by command arg</p>
+
+<ul>
+  <li>
+    <p>Compiled proto (format [1], in the accepted alternative)</p>
+
+    <ul>
+      <li>Simple scripts that want Bazel to log how they were called shouldn’t
+need to write and compile a protobuf message.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Data as a single string (format [2], in the accepted alternative)</p>
+
+    <ul>
+      <li>This causes problems with escaping argv to be passed as a 
+combined string. For a complicated command line, this is not 
+acceptable.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Repeatable arg, each value is an element of argv</p>
+
+    <ul>
+      <li>We still have potential sub-string escape problems, but now we 
+introduce dependencies on flag ordering.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Passing by future structured interface directly over the client-server 
+grpc interface</p>
+
+<ul>
+  <li>This could be a future migration, but we can’t block on it for now. It 
+also would only support tools that depend directly on the interface, 
+which most will never do, and which none do yet.</li>
+  <li>Any future work here would need to ensure that we don’t accept both a 
+command arg and a RunRequest-equivalent argument.</li>
+</ul>
+
+<h3 id="command-line-proto-for-reporting-command-lines">“Command line” proto for reporting command lines</h3>
+
+<p>For each command line described above, it needs a structure. This proposed 
+structure aims to logically group the different parts of the command line, 
+while still being general enough to absorb future changes. This also has the 
+advantage of being flexible enough to be used for passing the “tool” command 
+line, which is not necessarily structured in the same way as a Bazel command 
+line.</p>
+
+<p>Diagram provided for convenience:</p>
+
+<p><img src="https://github.com/bazelbuild/bazel-website/blob/master/designs/_posts/command_line_structure.png?raw=true" alt="command line structure" /></p>
+
+<p><code class="highlighter-rouge">CommandLine</code></p>
+
+<ul>
+  <li>
+    <p>enum label</p>
+
+    <ul>
+      <li><code class="highlighter-rouge">effective</code>/<code class="highlighter-rouge">explicit</code>/<code class="highlighter-rouge">tool-provided</code>, labels the command line. <br />
+Keeping this as an enum requires us to be explicit if adding an 
+additional command line to the output.</li>
+    </ul>
+  </li>
+  <li>
+    <p>repeatable <code class="highlighter-rouge">CommandLineSection</code></p>
+  </li>
+</ul>
+
+<p><code class="highlighter-rouge">CommandLineSection</code></p>
+
+<ul>
+  <li>
+    <p>string label</p>
+
+    <ul>
+      <li>Labels the section of the command line, such as the command, the command 
+arguments, the target.</li>
+      <li>The label could be an enum, having it not set is still doable for the 
+tool command line, but that might not be preferable. In particular, 
+some commands care about the arguments after –, notably the 
+canonicalize_flags or run commands, but sometimes it’s not a  useful 
+separation, so keeping this fluid has advantages.</li>
+    </ul>
+  </li>
+  <li>
+    <p>“chunk”</p>
+
+    <ul>
+      <li>The actual part of the command line. For the command (<code class="highlighter-rouge">build</code>, <code class="highlighter-rouge">test</code>, 
+etc) there would only be one chunk, but for flags or targets, there 
+could be many.</li>
+      <li>
+        <p>One of: (one of’s can’t have repeatable fields, so adding an additional 
+proto message layer for the repeatable parts of the command line)</p>
+
+        <ul>
+          <li>
+            <p>Simple chunk, string</p>
+
+            <ul>
+              <li>for executable name, command, any element of the command line 
+we only accept 1 of</li>
+            </ul>
+          </li>
+          <li>
+            <p>Repeatable_Chunk message - simple wrapper message with a repeatable 
+  string chunk</p>
+
+            <ul>
+              <li>Practically, this is necessary for build targets. It can be 
+used for any repeatable part of the command line that is NOT a 
+list of options</li>
+            </ul>
+          </li>
+          <li>
+            <p>Option_List message - simple wrapper message with a repeatable Option</p>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p>Option</p>
+
+<ul>
+  <li>
+    <p>String representation : <code class="highlighter-rouge">--foo=bar</code></p>
+
+    <ul>
+      <li>The part that should be printed when re-assembling the command line in 
+text logs.</li>
+      <li>(We might want both the original and the canonicalized version, but 
+I’d rather avoid the duplication if possible)</li>
+    </ul>
+  </li>
+  <li>Flag name : <code class="highlighter-rouge">foo</code></li>
+  <li>Flag value (canonicalized) : <code class="highlighter-rouge">bar</code></li>
+  <li>Repeatable effect and metadata tags (enum values, see Flag categorization 
+below)</li>
+  <li>
+    <p>Potential additional information</p>
+
+    <ul>
+      <li>short-hand form,</li>
+      <li>origin (command line, bazelrc, invocation_policy, for example, though 
+that isn’t currently readily available information)</li>
+    </ul>
+  </li>
+</ul>
+
+<p>For a complete, fully parsed command line, the <code class="highlighter-rouge">CommandLineSection</code>s might 
+potentially include any or all the following,</p>
+
+<ul>
+  <li>
+    <p>Label : “executable name”</p>
+
+    <ul>
+      <li>single argv[0], “bazel,” or “blaze” internally</li>
+    </ul>
+  </li>
+  <li>
+    <p>Label: “startup options”</p>
+
+    <ul>
+      <li>(repeatable) options</li>
+    </ul>
+  </li>
+  <li>
+    <p>Label: “command”</p>
+
+    <ul>
+      <li>single command</li>
+    </ul>
+  </li>
+  <li>
+    <p>Label: “command options”</p>
+
+    <ul>
+      <li>(repeatable) options</li>
+    </ul>
+  </li>
+  <li>
+    <p>Label: “command arg separator”</p>
+
+    <ul>
+      <li>”–”</li>
+    </ul>
+  </li>
+  <li>
+    <p>Label: “target”</p>
+
+    <ul>
+      <li>(repeatable) target name</li>
+    </ul>
+  </li>
+  <li>
+    <p>Label: “target args” (if applicable)</p>
+
+    <ul>
+      <li>(repeatable)</li>
+    </ul>
+  </li>
+</ul>
+
+<p>For cmd line A, we don’t know any structure, so we would have the CommandLine 
+label “tool-provided”, but with a single CommandLineSection without a label, 
+and everything in “repeatable chunk”.</p>
+
+<h3 id="required-optionsparser-refactoring">Required OptionsParser refactoring</h3>
+
+<p>Make the options parser able to correctly track both the canonical and original
+command line, with the canonical command line containing the final values of 
+the flags without the values that were used to create it, to avoid 
+re-application. Coming from where we are, there are two approaches that would 
+work:</p>
+
+<ul>
+  <li>
+    <p>Remove the ordering hacks in the OptionsParser for dealing with bazelrc and 
+invocation policy.</p>
+
+    <ul>
+      <li>Actually parse options in the order we claim, so that currently broken 
+last-mention wins is fixed, and we can list all instances of a flag 
+correctly in the literal command line report. It will also make correct 
+reporting of expansion flags (of all flavors) easier.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Track links between original and final versions of flags, with flags of no 
+value, that existed to change other flags (invocation policy, bazelrc and 
+expansion flags), rendered newter in the final version instead of allowing 
+re-application.</p>
+  </li>
+</ul>
+
+<h3 id="force-the-client-to-share-its-knowledge-of-the-initial-command-line">Force the client to share its knowledge of the initial command line</h3>
+
+<p>Some information that is not currently shared from client to server. Some 
+options parsed by the client are passed to the server at startup (hense the 
+name “startup option”) but some are allowed to change without requiring a new 
+server and so never get updated, or are passed to the server through 
+non-option means. We should instead have the RunRequest proto carry all the 
+information that the client was given. The server startup options would still 
+exist in their “effective” form for the lifetime of the server, but the 
+invocation-specific information would be passed to the server as received 
+literally.</p>
+
+<h3 id="literalness-vs-canonicalization">Literalness vs. Canonicalization</h3>
+
+<p>There are mainly two places where the literal way a command line was specified 
+does not need to be maintained; where canonicalization and standardization, 
+instead is helpful.</p>
+
+<ol>
+  <li>
+    <p>Placement of the targets and the command arguments - command args can be 
+placed before and after the target without affecting the resulting command 
+line. Representing this properly could be done by modifying the proposed 
+proto, to either list each chunk independently instead of grouping them by 
+target/option type, but I think the grouping is natural and useful.</p>
+  </li>
+  <li>
+    <p>The unparsed option syntax, such as whether it was passed in <code class="highlighter-rouge">--flag val</code> 
+or <code class="highlighter-rouge">--flag=val</code> form, the different accepted boolean forms, <code class="highlighter-rouge">--nobool_flag</code>, 
+<code class="highlighter-rouge">--bool_flag=0</code>, <code class="highlighter-rouge">--bool_flag=false</code>, <code class="highlighter-rouge">--bool_flag=no</code> that are all 
+semantically the same, and some flags have a long and short form (such as 
+–keep_going and -k). For command line reporting in the BuildEventProtocol 
+(BEP, see the proto definition in 
+//src/main/java/com/google/devtools/build/lib/buildeventstream/proto/build_event_stream.proto, 
+for context. There is no command line field yet,) I think a canonical 
+version is best, so that all flags set to false use the same syntax.</p>
+
+    <ul>
+      <li>Which canonical version, you ask? I think <code class="highlighter-rouge">--flag=val</code>, <code class="highlighter-rouge">--nobool</code> and 
+the longform <code class="highlighter-rouge">--keep_going</code> are the easiest to read.</li>
+    </ul>
+  </li>
+</ol>
+
+<p>In the OptionsParser, this will require the following:</p>
+
+<ul>
+  <li>UnparsedOptionValueDescription (defined in 
+src/main/java/com/google/devtools/common/options/OptionsParser.java) will 
+need to get a string representation of the actual way the option was passed 
+(“raw”) as well as a “standardized” or “canonical” value, that is parsed, 
+but would be accepted on the command line and reparsed to the same value.</li>
+</ul>
+
+<h3 id="flag-categorization-and-tagging">Flag categorization and tagging</h3>
+
+<p>Add ability to tag flags to be able to include or exclude certain types of 
+flags to have a filterable command line.</p>
+
+<p>Status: Implemented, migration in process<br />
+(see  src/main/protobuf/option_filters.proto &amp; 
+com/google/devtools/common/options/OptionDocumentationCategory.java)</p>
+
+<p>There will be different categorization mechanisms added. <br />
+(Details in the sections below)</p>
+
+<ul>
+  <li>
+    <p>Convert category, currently to string, to an enum for natural grouping of 
+flags in generated documentation.</p>
+
+    <ul>
+      <li>Each flag must belong to exactly 1 DocumentationCategory</li>
+    </ul>
+  </li>
+  <li>
+    <p>Add a “tag” field for option effect, for filtering. These tags, unlike the 
+categories, are meant to mostly make sense to experienced Bazel users, or 
+people who want to create filters - they should help isolate the cause of 
+an issue or behavior by allowing irrelevant options to be filtered out.</p>
+
+    <ul>
+      <li>Each flag must have at least 1 intended behavior, so should have 1* 
+OptionEffectTag</li>
+    </ul>
+  </li>
+  <li>
+    <p>Add a “tag” for option metadata - information about the flag itself. It 
+might be an statement about the intended use of an option, or how 
+trustworthy we might think it is, and so is useful in filtering, but 
+does not actually describe the “intent” or “meaning” of a flag.</p>
+
+    <ul>
+      <li>This can be an empty list, but options can also have multiple 
+OptionMetadataTags</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="label-enum">Label Enum</h4>
+
+<p>Keep all possible tags enumerated in a proto enum, separated into their types.</p>
+
+<p>Advantages</p>
+
+<ul>
+  <li>Forces labels to be consistent and immune to typos.</li>
+  <li>Forces labels to be documented &amp; well defined (we can expect developers 
+to use them correctly, instead of being unsure what labels are appropriate), 
+and requires developers who wish to introduce a new labels to explain what 
+they think it means and why it is useful (hopefully prevents “what” from 
+happening ever again)</li>
+  <li>Will hopefully discourage the creation of one-off labels.</li>
+</ul>
+
+<p>Disadvantages</p>
+
+<ul>
+  <li>Requires all definitions to be in one place, even if some tags are only 
+applicable to a subset of the system.</li>
+  <li>Double-documentation in the enum comments and in HelpCommand.</li>
+</ul>
+
+<h4 id="number-constraints-single-category-multiple-tags">Number constraints: Single category, multiple tags</h4>
+
+<p>Require exactly one DocumentationCategory, but allow each option to list 
+multiple tags. The @Option annotation will enforce most of these constraints, 
+though OptionsData will need to check that at least one OptionEffectTag is 
+listed.</p>
+
+<p>Justification</p>
+
+<ul>
+  <li>
+    <p>Single category</p>
+
+    <ul>
+      <li>Since these are just meant to be for grouping, there is no need to come 
+up with categories that are effectively mutually exclusive, as long as 
+there is always clearly a most appropriate category.</li>
+      <li>
+        <p>“Uncategorized” as an explicit category</p>
+
+        <ul>
+          <li>Makes it explicit inside the code that uncategorized flags will 
+be listed as such, as opposed to accepting a null value, which 
+might be misinterpreted.</li>
+          <li>Helps with a gradual rollout - we can flip the switch on using 
+this new documentation information before 100% of flags are 
+categorized.</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>Multiple Effect Tags</p>
+
+    <ul>
+      <li>An option can have multiple consequences, so limiting it to one 
+OptionEffectTag would reduce the value of the tag (It’d be great if 
+we could rely on all options that have an effect on output be labeled 
+as such, instead of getting an incomplete list)</li>
+      <li>Avoids confusion about which tag to list when multiple tags apply</li>
+      <li>Allows tags to be independent, since any intersecting option can just 
+list both tags. No umbrella tags needed.</li>
+    </ul>
+  </li>
+  <li>
+    <p>Minimum 1 effect tag</p>
+
+    <ul>
+      <li>Lists “No-Op” as an effect tag, so that if a flag truly does not have 
+any effect, it can list it, but otherwise, it is clear to the developer 
+that leaving out an effect is not an option.</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="alternatives-considered">Alternatives considered</h4>
+
+<p>The first version of this doc outlined an attempt to group the current tag 
+and category concept together, but finding useful categories that fit the 
+requirements of both use cases turned out to not be a useful exercise. 
+Fixing the categories used for grouping the help output is still useful, 
+but it does not actually overlap with the option filtering effort for command 
+lines.</p>
+
+<h4 id="rollout--strategy">Rollout / Strategy</h4>
+
+<p>Either we pick what categories matter, create the enum and migrate the depot 
+all in 1 go, or we could go through a more gradual process:</p>
+
+<ul>
+  <li>(1) Introduce the enums, the fields in the @Option annotation, and deprecate 
+ the current string “category” field</li>
+  <li>
+    <p>(2) Create bugs for every OptionsBase subclass to categorize the options, 
+ assigning to subteams. Ask for a 1 month turnaround.</p>
+
+    <ul>
+      <li>They should not remove the deprecated “category” field, for documentation 
+coherence. These lines will be removed in 1 go, when we convert the 
+documentation generation.</li>
+    </ul>
+  </li>
+  <li>(3) Once we’ve categorized some high proportion of the depot flags, (80%?) 
+ migrate “bazel help” documentation to using the “categories” information, 
+ including the html output used for the bazel.build docs.</li>
+  <li>(4) Remove the “category” field entirely and all mentions.</li>
+</ul>
+
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: Improved Command Line Reporting&body=Documentation URL: https://docs.bazel.build/designs/2017/07/13/improved-command-line-reporting.html&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#background">Background</a></li>
+<li class="toc-entry toc-h2"><a href="#goals">Goals</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#non-goals">Non-Goals</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#proposed-improvements---high-level-view">Proposed Improvements - High level view</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#more-command-lines">More command lines</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#work-required">Work Required</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#overview">Overview</a></li>
+<li class="toc-entry toc-h3"><a href="#passing-the-bazel-invoking-tools-command-line-to-the-server">Passing the Bazel-invoking tool’s command line to the server</a></li>
+<li class="toc-entry toc-h3"><a href="#command-line-proto-for-reporting-command-lines">“Command line” proto for reporting command lines</a></li>
+<li class="toc-entry toc-h3"><a href="#required-optionsparser-refactoring">Required OptionsParser refactoring</a></li>
+<li class="toc-entry toc-h3"><a href="#force-the-client-to-share-its-knowledge-of-the-initial-command-line">Force the client to share its knowledge of the initial command line</a></li>
+<li class="toc-entry toc-h3"><a href="#literalness-vs-canonicalization">Literalness vs. Canonicalization</a></li>
+<li class="toc-entry toc-h3"><a href="#flag-categorization-and-tagging">Flag categorization and tagging</a></li>
+</ul>
+</li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>

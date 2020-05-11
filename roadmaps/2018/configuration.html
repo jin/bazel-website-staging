@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bazel Configurability Roadmap - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/roadmaps/2018/configuration.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="Bazel Configurability Roadmap">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <style>
+  .padbottom { padding-bottom: 10px; }
+  .etabox {
+    background: #EFEFEF;
+    color: #38761D;
+    font-size: 15px;
+    font-weight: bold;
+    display: inline;
+    padding: 6px;
+    margin-right: 10px;
+  }
+  .donestatus {
+    color: #00D000;
+    font-weight: bold;
+    padding-left: 10px;
+  }
+  .inprogressstatus {
+    color: #D0D000;
+    font-weight: bold;
+    padding-left: 10px;
+  }
+  .notstartedstatus {
+    color: #D00000;
+    font-weight: bold;
+    padding-left: 10px;
+  }
+</style>
+
+<h1 id="bazel-configurability-2018-roadmap">Bazel Configurability 2018 Roadmap</h1>
+
+<p><em>Last verified: 2019-01-28</em></p>
+
+<p><em>Point of contact:</em> <a href="https://github.com/gregestren">gregestren</a></p>
+
+<p><em>Discuss:</em>  <a href="https://github.com/bazelbuild/bazel/issues/6431">Configurability roadmap: discussion</a></p>
+
+<p><strong>This roadmap has been retired. See <a href="../configuration.html">here</a> for the current roadmap.</strong></p>
+
+<h2 id="goal">Goal</h2>
+
+<p>Configurability’s goal is to make Bazel a graceful multiplatform build
+tool. It also focuses on how users decide how their projects are built.</p>
+
+<p>This translates into the following high-level goals:</p>
+
+<ol>
+  <li><strong><code class="highlighter-rouge">$ bazel {build|test} :all</code> just works</strong>
+    <ol>
+      <li>All targets “know” how to build for the right platforms with the right
+toolchains and desired options</li>
+      <li>
+        <div class="padbottom">Users only have to fiddle with options they care
+about</div>
+      </li>
+    </ol>
+  </li>
+  <li><strong>“Platforms” is a first-class concept</strong>
+    <ol>
+      <li>“Platforms” and “toolchains” are well-defined, map well to reality, and are
+ easy to create</li>
+      <li>
+        <div class="padbottom">Builds, build rules, remote executors, etc.
+naturally integrate platforms</div>
+      </li>
+    </ol>
+  </li>
+  <li>
+    <p><strong>Users decide what to configure</strong></p>
+
+    <p><code class="highlighter-rouge">$ bazel build //myapp:fancy_edition</code> automatically builds my app with
+ “fancy” features</p>
+  </li>
+  <li><strong>Users decide what rules to configure</strong>
+    <ol>
+      <li>e.g. “<em>all foo rules use the foo toolchain</em>”</li>
+      <li>All rules can have multiplatform dependencies</li>
+      <li>
+        <div class="padbottom">All configuration can be encoded in Starlark or
+ BUILD files</div>
+      </li>
+    </ol>
+  </li>
+  <li><strong>Builds stay fast and efficient</strong>
+    <ol>
+      <li>Multiplatform builds don’t duplicate platform-agnostic work</li>
+      <li>Building “foo” in distinct configurations produces distinct output paths</li>
+      <li>Builds remain cross platform-cacheable and remote execution-friendly</li>
+      <li>Users have robust tools to understand multiplatform effects</li>
+    </ol>
+  </li>
+</ol>
+
+<h2 id="roadmap">Roadmap</h2>
+
+<p>Dates are approximate based on our best understanding of problem complexity
+and developer availability. ETAs will change, but we’ll keep them refreshed and
+current.</p>
+
+<h3 id="platforms">Platforms</h3>
+<p>There’s a more detailed <a href="platforms.html">Platforms Roadmap</a> available with more details on ongoing subprojects.</p>
+
+<div class="etabox">June 2018</div>
+<p><strong>Rules can declare what kinds of machines
+they can build on</strong>
+<span class="donestatus">DONE</span> (<a href="http://github.com/bazelbuild/bazel/issues/5217">#5217</a>)</p>
+
+<ul>
+  <li>Because of remote execution, this might not be the same machine Bazel runs on</li>
+</ul>
+
+<div class="etabox">Dec 2018</div>
+<p><strong>C++ rules fully support
+<a href="https://docs.bazel.build/versions/master/platforms.html">platforms</a> and
+<a href="https://docs.bazel.build/versions/master/toolchains.html">toolchains</a></strong>
+<span class="inprogressstatus">PARTIALLY DONE</span> (<a href="https://github.com/bazelbuild/bazel/issues/6516">#6516</a>)</p>
+
+<ul>
+  <li>This gives them first-class Starlark support, <code class="highlighter-rouge">select()</code> <a href="https://docs.bazel.build/versions/master/be/general.html#config_setting.constraint_values">on
+platforms</a>,
+and configuration via
+<a href="https://docs.bazel.build/versions/master/platforms.html#specifying-a-platform-for-a-build">--platforms</a></li>
+  <li>These set best practice templates for adoption by other rules</li>
+</ul>
+
+<div class="etabox">Dec 2018</div>
+<p><strong>“Toolchain modes” documentation explains how
+to use flags and configuration to select between multiple toolchains for the
+same platform</strong>
+<span class="notstartedstatus">NOT STARTED</span> (<a href="https://github.com/bazelbuild/bazel/issues/6517">#6517</a>)</p>
+
+<ul>
+  <li>Examples: debug vs. opt, C++ <a href="https://github.com/google/sanitizers">correctness
+sanitizers</a></li>
+</ul>
+
+<div class="etabox">2019</div>
+<p><strong>There’s <em>one</em>, simple way to choose platforms
+at the command line</strong>
+<span class="notstartedstatus">NOT STARTED</span> (<a href="https://github.com/bazelbuild/bazel/issues/6518">#6518</a>)</p>
+
+<ul>
+  <li><code class="highlighter-rouge">$ bazel build //a:foo_lang_rule --platforms=//platforms:mac</code></li>
+  <li><code class="highlighter-rouge">--cpu</code>, <code class="highlighter-rouge">--host_cpu</code>, <code class="highlighter-rouge">--crosstool_top</code>, <code class="highlighter-rouge">--javabase</code>,
+<code class="highlighter-rouge">--apple_crosstool_top</code>, etc. are obsolete and trigger deprecation warnings</li>
+</ul>
+
+<div class="etabox">2019</div>
+<p><strong>Flagless multiplatform builds
+(unoptimized)</strong>
+<span class="notstartedstatus">NOT STARTED</span> (<a href="https://github.com/bazelbuild/bazel/issues/6519">#6519</a>)</p>
+
+<ul>
+  <li>
+    <div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>      <span class="nv">$ </span><span class="nb">cat </span>a/BUILD
+      cc_binary<span class="o">(</span>name <span class="o">=</span> <span class="s2">"app_for_linux"</span>, platforms <span class="o">=</span> <span class="o">[</span><span class="s2">"//platforms:linux"</span><span class="o">])</span>
+      cc_binary<span class="o">(</span>name <span class="o">=</span> <span class="s2">"app_for_mac"</span>, platforms <span class="o">=</span> <span class="o">[</span><span class="s2">"//platforms:mac"</span><span class="o">])</span>
+
+      <span class="nv">$ </span>bazel build //a:all <span class="c"># No command line flags!</span>
+</code></pre></div>    </div>
+  </li>
+  <li>Platform-independent deps (e.g. Java libraries) may be built twice: see
+  <a href="#correctness_and_speed">Correctness and Speed</a> below</li>
+</ul>
+
+<div class="etabox">2019</div>
+<p><strong>Java, Android, Apple rules fully support platforms and
+toolchains</strong>
+<span class="inprogressstatus">SCHEDULED</span> (<a href="https://github.com/bazelbuild/bazel/issues/6521">#6521</a>)</p>
+
+<ul>
+  <li>These depend on Java and C++, so need to happen after those rules</li>
+  <li><code class="highlighter-rouge">--android_sdk</code>, -<code class="highlighter-rouge">-ios_sdk_version</code>, etc. are deprecated and obsolete</li>
+</ul>
+
+<h3 id="user-defined-configuration"><a href="https://docs.google.com/document/d/1vc8v-kXjvgZOdQdnxPTaV0rrLxtP2XwnD2tAZlYJOqw/edit?usp=sharing">User-Defined Configuration</a></h3>
+
+<div class="etabox">Oct 2018</div>
+<p><strong>Starlark supports platform transitions</strong>
+<span class="inprogressstatus">PARTIALLY DONE</span> (<a href="http://github.com/bazelbuild/bazel/issues/5574">#5574</a>)</p>
+
+<ul>
+  <li>Rule designers can decide which rules target which platforms</li>
+  <li>Rule designers can declare default target platforms</li>
+  <li>Rule designers can have dependencies target different platforms than their
+parents</li>
+</ul>
+
+<div class="etabox">Dec 2018</div>
+<p><strong>Starlark supports multi-architecture (“fat”)
+binaries</strong>
+<span class="donestatus">DONE</span> (<a href="http://github.com/bazelbuild/bazel/issues/5575">#5575</a>)</p>
+
+<ul>
+  <li>Rule designers can write rules that bundle deps configured for multiple
+platforms</li>
+</ul>
+
+<div class="etabox">Jan 2019</div>
+<p><strong>Starlark supports user-defined configuration
+settings</strong>
+<span class="inprogressstatus">PARTIALLY DONE</span> (<a href="http://github.com/bazelbuild/bazel/issues/5577">#5577</a>)</p>
+
+<ul>
+  <li>
+    <p>A standard API defines how to declare custom settings (consolidating <a href="https://docs.bazel.build/versions/master/command-line-reference.html">command
+line
+flags</a>,
+<a href="https://github.com/bazelbuild/bazel/blob/master/src/main/java/com/google/devtools/build/lib/rules/apple/AppleCommandLineOptions.java#L246">“secret”
+flags</a>,
+<a href="https://github.com/bazelbuild/bazel/blob/b3cf83cd20f30d77e6768de651a3e652f86d6f78/src/main/java/com/google/devtools/build/lib/analysis/config/BuildConfiguration.java#L423">–define</a>,
+<a href="https://source.bazel.build/bazel/+/master:src/main/java/com/google/devtools/build/lib/analysis/config/BuildConfiguration.java;l=835?q=file:BuildConfiguration.java">–features</a>,
+and <a href="https://github.com/bazelbuild/bazel/blob/d6a98282e229b311dd56e65b72003197120f299a/src/test/java/com/google/devtools/build/lib/rules/android/AndroidBinaryTest.java#L3107">feature
+flags</a>)</p>
+  </li>
+  <li>All hard-coded Bazel flags can be migrated to this API. Actual migration may
+not have begun.</li>
+  <li>End users (i.e. non-rule designers) can’t customize settings. We want to start
+by seeing how far we can get with <code class="highlighter-rouge">--platforms</code> and <a href="https://github.com/bazelbuild/bazel/blob/d6a98282e229b311dd56e65b72003197120f299a/src/test/java/com/google/devtools/build/lib/rules/android/AndroidBinaryTest.java#L3107">feature
+flags</a>.</li>
+</ul>
+
+<div class="etabox">Jan 2019</div>
+<p><strong>All native Bazel rules can be implemented
+in Starlark</strong>
+<span class="inprogressstatus">PARTIALLY DONE</span> (<a href="http://github.com/bazelbuild/bazel/issues/5578">#5578</a>)</p>
+
+<h3 id="correctness-and-speed">Correctness and Speed</h3>
+
+<div class="etabox">May 2018</div>
+<p><strong>Users can manually tag rules to not
+duplicate under <a href="https://github.com/bazelbuild/bazel/blob/d6a98282e229b311dd56e65b72003197120f299a/src/test/java/com/google/devtools/build/lib/rules/android/AndroidBinaryTest.java#L3107">feature
+flags</a></strong>
+<span class="donestatus">DONE</span> (<a href="https://github.com/bazelbuild/bazel/issues/6523">#6523</a>)</p>
+
+<ul>
+  <li>This makes “feature customization” under Android binaries more efficient</li>
+  <li>Non-Android dependencies won’t duplicate due to Android-only changes</li>
+</ul>
+
+<div class="etabox">June 2018</div>
+<p><strong>Bazel updates <em>fast</em> on <code class="highlighter-rouge">--test_timeout</code>, etc. changes</strong>
+<span class="donestatus">DONE</span> (<a href="http://github.com/bazelbuild/bazel/issues/5579">#5579</a>)</p>
+
+<ul>
+  <li>Oct 2018: Must be enabled with <a href="https://github.com/bazelbuild/bazel/blob/f29f78d19288f6d6e7aea6bc65e6bfa01b2531ad/src/main/java/com/google/devtools/build/lib/analysis/test/TestConfiguration.java#L121~"><code class="highlighter-rouge">--trim_test_configurarion</code></a></li>
+</ul>
+
+<div class="etabox">Dec 2018</div>
+<p><strong>An experimental Bazel mode automatically
+minimizes build graphs</strong>
+<span class="inprogressstatus">PARTIALLY DONE</span> (<a href="https://github.com/bazelbuild/bazel/issues/6524">#6524</a>)</p>
+
+<ul>
+  <li>No rule builds twice due to unrelated flag changes</li>
+</ul>
+
+<div class="etabox">Dec 2018</div>
+<p><strong>User documentation provides clear guidance
+on “safe” <a href="#user-defined-configuration">Starlark transitions</a> use</strong>
+<span class="notstartedstatus">NOT STARTED</span> (<a href="https://github.com/bazelbuild/bazel/issues/6525">#6525</a>)</p>
+
+<ul>
+  <li>Explains the risks of performance and memory regressions</li>
+  <li>Explains how to minimize these risks and make informed use of the feature</li>
+  <li>Explains how to track improvements and report problemns</li>
+</ul>
+
+<div class="etabox">2019</div>
+<p><strong>Java compilation doesn’t include cpu in its
+output paths</strong>
+<span class="notstartedstatus">ON HOLD</span> (<a href="https://github.com/bazelbuild/bazel/issues/6527">#6527</a>)</p>
+
+<ul>
+  <li>This improves multiplatform build times and cross-build cacheability</li>
+  <li>This is conditional on the impact of generated sources,
+<a href="https://docs.bazel.build/versions/master/be/functions.html#select">selects</a>(),
+etc.</li>
+</ul>
+
+<div class="etabox">2019</div>
+<p><strong>Distinct actions can’t write to the same
+output path</strong>
+<span class="inprogressstatus">IN PROGRESS</span> (<a href="https://github.com/bazelbuild/bazel/issues/6526">#6526</a>)</p>
+
+<ul>
+  <li>This prevents “output clobbering” when the same command is invoked twice with
+different inputs, producing different versions of the same output</li>
+  <li>This is especially important for Starlark rules</li>
+</ul>
+
+<div class="etabox">2019</div>
+<p><strong>Bazel automatically minimizes graphs over
+feature flag changes</strong>
+<span class="notstartedstatus">NOT STARTED</span> (<a href="https://github.com/bazelbuild/bazel/issues/6524">#6524</a>)
+<br /><br /></p>
+
+<div class="etabox">2019</div>
+<p><strong>Bazel automatically minimizes graphs over
+all configuration changes</strong>
+<span class="notstartedstatus">NOT STARTED</span> (<a href="https://github.com/bazelbuild/bazel/issues/6524">#6524</a>)</p>
+
+<ul>
+  <li>This productionizes the experimental minimization mode</li>
+</ul>
+
+<div class="etabox">2019</div>
+<p><strong>Build actions cache efficiently</strong>
+<span class="inprogressstatus">IN PROGRESS</span> (<a href="https://github.com/bazelbuild/bazel/issues/6526">#6526</a>)</p>
+
+<ul>
+  <li>Content-identical outputs have the same file name (as much as possible)</li>
+  <li>Output paths don’t include cache-poisoning segments.:
+<code class="highlighter-rouge">bazel-out/ppc-fastbuild/PlatformIndependentModule.class</code></li>
+</ul>
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: Bazel Configurability Roadmap&body=Documentation URL: https://docs.bazel.build/roadmaps/2018/configuration.html&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#goal">Goal</a></li>
+<li class="toc-entry toc-h2"><a href="#roadmap">Roadmap</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#platforms">Platforms</a></li>
+<li class="toc-entry toc-h3"><a href="#user-defined-configuration">User-Defined Configuration</a></li>
+<li class="toc-entry toc-h3"><a href="#correctness-and-speed">Correctness and Speed</a></li>
+</ul>
+</li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>

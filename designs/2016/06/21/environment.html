@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Specifying environment variables - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/designs/2016/06/21/environment.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="Specifying environment variables">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <h1 id="design-document-specifying-environment-variables-for-actions">Design Document: Specifying environment variables for actions</h1>
+
+<p><strong>Design documents are not descriptions of the current functionality of Bazel.
+Always go to the documentation for current information.</strong></p>
+
+<p><strong>Status</strong>: Implemented. See <a href="/docs/skylark/lib/ctx.html#action">documentation</a></p>
+
+<p><strong>Author</strong>: <a href="mailto:aehlig@google.com">Klaus Aehlig</a></p>
+
+<p><strong>Design document published</strong>: 21 June 2016</p>
+
+<h2 id="current-shortcomings">Current shortcomings</h2>
+
+<p>Currently, Bazel provides a cleaned set of environment variables to the
+actions in order to obtain hermetic builds. This, however is not sufficient
+for all use cases.</p>
+
+<ul>
+  <li>
+    <p>Projects often want to use tools which are not part of the repository; however,
+their location varies from installation to installation. So, some sensible
+value for the <code class="highlighter-rouge">PATH</code> environment variable has to be set.</p>
+  </li>
+  <li>
+    <p>Some set-ups depend on every program having access to specific variables,
+e.g., indicating the homebrew paths, or library paths.</p>
+  </li>
+  <li>
+    <p>Commercial compilers sometimes need to be passed the location of a license
+server through the environment.</p>
+  </li>
+</ul>
+
+<h2 id="proposed-solution">Proposed solution</h2>
+
+<h3 id="new-flag---action_env">New flag <code class="highlighter-rouge">--action_env</code></h3>
+
+<p>We propose to add a new bazel flag, <code class="highlighter-rouge">--action_env</code> which has two
+valid forms of usage,</p>
+
+<ul>
+  <li>
+    <p>specifying a variable with unspecified value, <code class="highlighter-rouge">--action_env=VARIABLE</code>,
+and</p>
+  </li>
+  <li>
+    <p>specifying a variable with a value, <code class="highlighter-rouge">--action_env=VARIABLE=VALUE</code>;
+in the latter case, the value can well be the empty string, but it is still
+considered a specified value.</p>
+  </li>
+</ul>
+
+<p>This flag has a “latest wins” semantics in the sense that if the option is given
+twice for the same variable, only the latest option will be used, regardless
+whether specified or unspecified value. Options given for different variables
+accumulate.</p>
+
+<p>In every action executed
+with <a href="/docs/skylark/lib/ctx.html#action"><code class="highlighter-rouge">use_default_shell_env</code></a> being true,
+precisely the environment variables specified by
+<code class="highlighter-rouge">--action_env</code> options are set as the default environment.
+(Note that, therefore, by default, the environment for actions is empty.)</p>
+
+<ul>
+  <li>
+    <p>If the effective option for a variable has an unspecified value,
+the value from the invocation environment of Bazel is taken.</p>
+  </li>
+  <li>
+    <p>If the effective option for a variable specifies a value, this value is
+taken, regardless of the environment in which Bazel is invoked.</p>
+  </li>
+</ul>
+
+<p>Environment variables are considered an essential part of an action. In other
+words, an action is expected to produce a different output, if the environment
+it is invoked in differs; in particular, a previously cached value cannot be
+taken if the effective environment changes.</p>
+
+<p>Given that normally a rule writer cannot know which tools might need fancy
+environment variables (think of the commercial compiler use case), the default
+for the <a href="/docs/skylark/lib/ctx.html#action"><code class="highlighter-rouge">use_default_shell_env</code></a>
+parameter will become true.</p>
+
+<h3 id="list-of-rc-files-read-by-bazel">List of rc-files read by Bazel</h3>
+
+<p>The list of rc-files that Bazel takes options from will include, at
+least, the following files, where files later in the list take precedence over
+the ones earlier in the list for conflicting options; for the
+<code class="highlighter-rouge">--action_env</code> option the already described “latest wins” semantics is
+applied.</p>
+
+<ul>
+  <li>
+    <p>A global rc-file. This file typically contains defaults for a whole group of
+machines, like all machines of a company. On UNIX-like systems, it will be
+located at <code class="highlighter-rouge">/etc/bazel.bazelrc</code>.</p>
+  </li>
+  <li>
+    <p>A machine-wide rc-file. This file is typically set by the administrator of
+the machine or a group of machines with the same architecture. It typically
+contains settings that are specific to that architecture and hardware.
+On UNIX-like systems it will be next to be binary and called like the binary
+with <code class="highlighter-rouge">.bazelrc</code> appended to the file name.</p>
+  </li>
+  <li>
+    <p>A user-specific file, located in <code class="highlighter-rouge">~/.bazelrc</code>. This file will be set by
+each user for options desired for all Bazel invocations.</p>
+  </li>
+  <li>
+    <p>A project-specific file. This is the file <code class="highlighter-rouge">tools/bazel.rc</code> next to
+the <code class="highlighter-rouge">WORKSPACE</code> file. This file is considered project-specific and
+typically versioned in the same repository as the project.</p>
+  </li>
+  <li>
+    <p>A file specific to user, project, and checkout. This is the file
+<code class="highlighter-rouge">.bazelrc</code> next to the <code class="highlighter-rouge">WORKSPACE</code> file. As it is specific to
+the user and the machine he or she is working on, projects are advised
+to ignore that file in the repository of the project (e.g., by adding
+it to their <code class="highlighter-rouge">.gitignore</code> file, if they version the project with git).</p>
+  </li>
+</ul>
+
+<p>When looking for those rc-files, symbolic links are followed; files not
+existing are silently assumed to be empty. Note that all those are regular
+rc-files for Bazel, hence are not limited to the newly introduced
+<code class="highlighter-rouge">--action_env</code> option. Also, the rule that options for more specific
+invocations win over common options still applies; but, within each level of
+specificness, precedence is given according to the mentioned order of rc-files.</p>
+
+<h2 id="example-usages-of-environment-specifications">Example usages of environment specifications</h2>
+
+<p>The proposed solution allows for a variety of use cases, including the
+following.</p>
+
+<ul>
+  <li>
+    <p>Systems using commercial compilers can set the environment variables with
+information about the license server in the global rc file.</p>
+  </li>
+  <li>
+    <p>Users requiring special variables, like the ones used by homebrew, can set
+them in their machine specific rc-file. In fact, once this proposal is
+implemented, the homebrew port for Bazel could itself install that
+machine-wide rc-file.</p>
+  </li>
+  <li>
+    <p>Projects depending on the environment, e.g., because they use tools assumed to
+be already installed on the user’s systm, have several options.</p>
+
+    <ul>
+      <li>
+        <p>If they are optimistic about the environment, e.g., because they are not
+very version dependent on the tools used, can just specify which environment
+variables they depend on by adding declarations with unspecified values in
+the <code class="highlighter-rouge">tools/bazel.rc</code> file.</p>
+      </li>
+      <li>
+        <p>If dependencies are more delicate, projects can provide a configure script
+that does whatever analysis of the environment is necessary and then write
+<code class="highlighter-rouge">--action_env</code> options with specified values to the user-project
+local <code class="highlighter-rouge">.bazelrc</code>
+file. As the configure script will only run when manually invoked by the
+user and the syntax of the user-project local <code class="highlighter-rouge">.bazelrc</code> file is so that it
+can be easily
+be edited by a human, it is OK if that script only works in the majority of
+the cases, as a user requiring an unusual setup for that project can easily
+modify the user-project local <code class="highlighter-rouge">.bazelrc</code> by hand afterwards.</p>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>Irrespectively of the approach chosen by the project, a user where the
+environment changes frequently (e.g., on clusters or other machines using a
+traditional layout) can fix the environment by adding <code class="highlighter-rouge">--action_env</code>
+options with specific values to the user-project local <code class="highlighter-rouge">.bazelrc</code>.</p>
+
+    <p>To simplify this use case, and other “freeze on first use” approaches,
+Bazel’s <code class="highlighter-rouge">info</code> command will provide a new key <code class="highlighter-rouge">client-env</code> that will show
+the environment variables, together with their values. More precisely,
+each variable-value pair will be prefixed with <code class="highlighter-rouge">build --action_env=</code>, so
+that <code class="highlighter-rouge">bazel info client-env &gt;&gt; .bazelrc</code> can be used to freeze the
+environment.</p>
+  </li>
+</ul>
+
+<h2 id="transition-plan">Transition plan</h2>
+
+<p>Currently, some users of Bazel already make use of the fact that <code class="highlighter-rouge">PATH</code>,
+<code class="highlighter-rouge">LD_LIBRARY_PATH</code>, and <code class="highlighter-rouge">TMPDIR</code> are being passed to actions. To allow those
+projects a smooth
+transition to the new set up, the global Bazel rc-file provided by upstream
+will have the following content.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>build --action_env=PATH
+build --action_env=LD_LIBRARY_PATH
+build --action_env=TMPDIR
+build --test_env=PATH
+build --test_env=LD_LIBRARY_PATH
+</code></pre></div></div>
+
+<h2 id="bazels-own-dependency-on-path">Bazel’s own dependency on <code class="highlighter-rouge">PATH</code></h2>
+
+<p>Bazel itself also uses external tools, like <code class="highlighter-rouge">cat</code>, <code class="highlighter-rouge">echo</code>, <code class="highlighter-rouge">sh</code>, but also
+tools like <code class="highlighter-rouge">bash</code> where the location differs between installations. In
+particular, a value for <code class="highlighter-rouge">PATH</code> needs to be provided. This will be covered
+by the setting of the global bazel configuration file. Should the need arise, a
+configure-like script can be added; at the moment it seems that this will not
+be necessary.</p>
+
+<h2 id="reasons-for-the-design-choices-risks-and-alternatives-considered">Reasons for the Design Choices, Risks, and Alternatives Considered</h2>
+
+<h3 id="conflicting-interests-on-the-environment-influencing-actions">Conflicting Interests on the environment influencing actions</h3>
+
+<p>There are conflicting requirements for the environment variables of an action.</p>
+
+<ul>
+  <li>
+    <p>Users expect Bazel to “just work”, i.e., the expectation is that if a tool
+works on the command line, it should also work when called from an action in
+a Bazel invocation from the same environment. A lot of compilers, however,
+depend, at least on some systems, on certain environment variables.
+An approach used by quite a few other build systems is to pass through the
+whole invocation environment.</p>
+  </li>
+  <li>
+    <p>Bazel wants to provide correct and reproducible builds. Therefore, everything
+that potentially influences the outcome of an action needs to be controlled
+and tracked; a cached result cannot be used if anything potentially changing
+the outcome has changed.</p>
+  </li>
+  <li>
+    <p>Users expect Bazel to not do rebuilds they (i.e., the users) know are
+unnecessary. And, while for a lot of users the environment variables that
+actually influence the build stay stable, the full environment constantly
+changes; take the <code class="highlighter-rouge">OLDPWD</code> environment variable as an example.</p>
+  </li>
+</ul>
+
+<p>This design tries to reconcile these needs by allowing arbitrary environment
+variables being set for actions, but only in an opt-in way. Variables need to
+be explicitly mentioned, either in a configuration file or on the command line,
+to be provided to an action.</p>
+
+<h3 id="generic-solutions-versus-special-casing">Generic Solutions versus Special Casing</h3>
+
+<p>As Bazel already has quite a number of concepts, there is the valid concern
+that the complexity might increase too much and newly added concepts might
+become a maintenance burden. Another concern is that more configuration
+mechanisms make it harder for the user to know which one is the correct one
+to use for his or her problem. The general desire is to have few, but powerful
+enough mechanisms to control the build behaviour and avoid special casing.</p>
+
+<ul>
+  <li>
+    <p>Putting the environment variables visible in actions in the hand of the
+user avoids the need of special casing more and more “important” environment
+variables.</p>
+  </li>
+  <li>
+    <p>Building on the already existing mechanism to specify, inherit, and override
+command-line options reduces the amount newly introduced concepts. The main
+addition is a command-line option.</p>
+  </li>
+</ul>
+
+<h3 id="source-of-knowledge-for-needed-environment-variables">Source of Knowledge for Needed Environment Variables</h3>
+
+<p>Another aspect that went into the design is that different entities know
+about environment variables that are essential for the build to work.</p>
+
+<ul>
+  <li>
+    <p>Some variables are “obviously” relevant, like <code class="highlighter-rouge">PATH</code> or <code class="highlighter-rouge">TMPDIR</code>.
+However, there is no “obvious” value for them.</p>
+
+    <ul>
+      <li>
+        <p>Both depend on the layout of the system in question. A special fast
+file system for temporary files might be provided at a designated
+location. Binaries might be installed under <code class="highlighter-rouge">/bin</code>, <code class="highlighter-rouge">/usr/bin</code>,
+<code class="highlighter-rouge">/usr/local/bin</code>, or even versioned paths to allow parallel installations
+of different versions of the same tool. For example, on Debian Gnu/Linux
+the <code class="highlighter-rouge">bash</code> is installed in <code class="highlighter-rouge">/bin</code>, whereas on FreeBSD it is usually
+installed in <code class="highlighter-rouge">/usr/local/bin</code> (but the prefix <code class="highlighter-rouge">/usr/local</code> is at the
+discretion of the system administrator).</p>
+      </li>
+      <li>
+        <p>The user might have custom-built versions of tools somewhere in the
+home directory, thus making the user the only one who knows an appropriate
+value for the <code class="highlighter-rouge">PATH</code> variable. Moreover, a user who works on several
+projects requiring different versions of the same tool may even require
+different values of the <code class="highlighter-rouge">PATH</code> variable for each project.</p>
+      </li>
+    </ul>
+  </li>
+  <li>
+    <p>The authors and users of a tool know about special variables the tools
+need to work. While the tool itself might serve a standard purpose, like
+compiling C code, the variables the tool depends on might be specific to
+that tool (like passing information about a license server).</p>
+  </li>
+  <li>
+    <p>The maintainers of a porting or packaging system know about environment
+variables a tool might additionally need (e.g., in the homebrew case).
+These might not be needed if the same tool is packaged differently.</p>
+  </li>
+  <li>
+    <p>The project authors know about environment variables special to their
+project that some of their actions need.</p>
+  </li>
+</ul>
+
+<p>These different sources of information make it hard to designate a
+single maintainer for the action environment. This makes approaches
+undesirable that are based on a single source specifying the action
+environment, like the <code class="highlighter-rouge">WORKSPACE</code> file, or the rule definitions. While
+those approaches make it easy to predict the environment an action will
+have, they all require the user to merge in the specifics of the system
+and his or her personal settings for each checkout (including rebasing
+these changes for each upstream change of that file). Collecting environment
+variables via the rc-file mechanism allows setting each variable within
+the appropriate scope (global, machine-dependent, user-spefic, project-specific,
+specific to the user-project pair) in a conflict-free way by the entity
+in charge of that scope.</p>
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: Specifying environment variables&body=Documentation URL: https://docs.bazel.build/designs/2016/06/21/environment.html&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#current-shortcomings">Current shortcomings</a></li>
+<li class="toc-entry toc-h2"><a href="#proposed-solution">Proposed solution</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#new-flag---action_env">New flag --action_env</a></li>
+<li class="toc-entry toc-h3"><a href="#list-of-rc-files-read-by-bazel">List of rc-files read by Bazel</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#example-usages-of-environment-specifications">Example usages of environment specifications</a></li>
+<li class="toc-entry toc-h2"><a href="#transition-plan">Transition plan</a></li>
+<li class="toc-entry toc-h2"><a href="#bazels-own-dependency-on-path">Bazel’s own dependency on PATH</a></li>
+<li class="toc-entry toc-h2"><a href="#reasons-for-the-design-choices-risks-and-alternatives-considered">Reasons for the Design Choices, Risks, and Alternatives Considered</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#conflicting-interests-on-the-environment-influencing-actions">Conflicting Interests on the environment influencing actions</a></li>
+<li class="toc-entry toc-h3"><a href="#generic-solutions-versus-special-casing">Generic Solutions versus Special Casing</a></li>
+<li class="toc-entry toc-h3"><a href="#source-of-knowledge-for-needed-environment-variables">Source of Knowledge for Needed Environment Variables</a></li>
+</ul>
+</li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>

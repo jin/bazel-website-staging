@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Skylark Remote Repositories - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/designs/2015/07/02/skylark-remote-repositories.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="Skylark Remote Repositories">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <h1 id="design-document-skylark-remote-repositories">Design Document: Skylark Remote Repositories</h1>
+
+<p><strong>Design documents are not descriptions of the current functionality of Bazel.
+Always go to the documentation for current information.</strong></p>
+
+<p><strong>Status:</strong> implemented</p>
+
+<p><strong>Author:</strong> dmarting@google.com</p>
+
+<p><strong>Reviewers:</strong> lberki@google.com, laurentlb@google.com, kchodorow@google.com</p>
+
+<p><strong>Design document published</strong>: 02 July 2015</p>
+
+<h2 id="context">Context</h2>
+
+<p><a href="/docs/skylark/index.html">Skylark</a> is the
+extension language for Bazel and  lets Bazel users describe the
+build for new languages easily. External users do not create
+native rules and we want to avoid them doing so.</p>
+
+<p><a href="/docs/external.html">Remote repositories</a>
+are a convenient way to specify your third party dependencies
+and to fetch them along with the build if you don’t want to
+check them in your repository.</p>
+
+<p>This document discuss “Skylark Remote Repositories”, that is
+creating new remote repository rules using Skylark.</p>
+
+<h2 id="why">Why?</h2>
+
+<ul>
+  <li>Enable users to specify new kind of repositories, we already have
+requests for PyPI for example. We don’t want to be supporting every
+kind of repository that exists outside.</li>
+  <li>Enable Skylark rules to write macros to have one-liners for
+including all their tools in your WORKSPACE file.</li>
+  <li>Enable configuration of languages tooling:
+<a href="/design/2015/03/06/bazel-init.html">bazel init</a>
+first approach as a separate tools is not really user-friendly and
+the same kind of flexibility can be achieved by creating
+repositories rule in Skylark. An example for the JDK is
+<a href="https://github.com/damienmg/bazel/commit/c40bd9c71965f0a8c85b732a0b0c3dbe31e017cf/jdk.bzl">here</a>.</li>
+</ul>
+
+<h2 id="user-interface-see-the-jdk-example">User interface (see the <a href="https://github.com/damienmg/bazel/commit/c40bd9c71965f0a8c85b732a0b0c3dbe31e017cf/jdk.bzl">JDK example</a>)</h2>
+
+<p>The load statement will now be available from the WORKSPACE, working
+the same way it does for build file but with WORKSPACE specific
+functions instead.</p>
+
+<p>In the same way that we have macros and rules for the BUILD file, we
+are going to have macros and rule for the WORKSPACE file. The former
+will be a convenient way to combine remote repositories and the latter
+enable creation of new repositories kind.</p>
+
+<h3 id="macros">Macros</h3>
+
+<p>Skylark macros would be activated in the WORKSPACE file and would
+behave as expected. Macros would enable to combine remote repositories
+creation and bind into a single rules E.g. <code class="highlighter-rouge">setup_java()</code> would set-up
+all bindings and the local repository needed to build java target:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">setup_java</span><span class="p">():</span>
+  <span class="n">native</span><span class="o">.</span><span class="n">new_local_repository</span><span class="p">(</span><span class="n">name</span> <span class="o">=</span> <span class="err">“</span><span class="n">jdk</span><span class="o">-</span><span class="n">local</span><span class="err">”</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="err">“</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">share</span><span class="o">/</span><span class="n">java</span><span class="o">/</span><span class="n">jdk8</span><span class="err">”</span><span class="p">,</span> <span class="n">build_file</span> <span class="o">=</span> <span class="err">“</span><span class="n">jdk</span><span class="o">.</span><span class="n">BUILD</span><span class="err">”</span><span class="p">)</span>
+  <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="p">[</span><span class="s">"jni_header"</span><span class="p">,</span> <span class="s">"jni_md_header"</span><span class="p">,</span> <span class="s">"langtools"</span><span class="p">,</span> <span class="s">"bootclasspath"</span><span class="p">,</span> <span class="s">"extdir"</span><span class="p">,</span> <span class="s">"toolchain"</span><span class="p">,</span> <span class="s">"jdk"</span><span class="p">,</span> <span class="s">"java"</span><span class="p">,</span> <span class="s">"javac"</span><span class="p">,</span> <span class="s">"jar"</span><span class="p">]:</span>
+    <span class="n">native</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">actual</span><span class="o">=</span><span class="s">"@</span><span class="si">%</span><span class="s">s//:</span><span class="si">%</span><span class="s">s"</span> <span class="o">%</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">target</span><span class="p">))</span>
+  <span class="n">native</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">"jni_md_header-linux"</span><span class="p">,</span> <span class="n">actual</span><span class="o">=</span><span class="s">"@</span><span class="si">%</span><span class="s">s//:jni_md_header"</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+  <span class="n">native</span><span class="o">.</span><span class="n">bind</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s">"jni_md_header-darwin"</span><span class="p">,</span> <span class="n">actual</span><span class="o">=</span><span class="s">"@</span><span class="si">%</span><span class="s">s//:jni_md_header"</span> <span class="o">%</span> <span class="n">name</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h3 id="remote-repository-rule">Remote repository rule</h3>
+<p>A remote repository rule would be set-up the same way we set-up a
+build rule but with the <code class="highlighter-rouge">repository_rule</code> statement:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">jdk_repository</span> <span class="o">=</span> <span class="n">repository_rule</span><span class="p">(</span>
+  <span class="n">implementation</span> <span class="o">=</span> <span class="n">my_impl</span><span class="p">,</span>
+  <span class="n">attrs</span> <span class="o">=</span> <span class="p">{</span>
+     <span class="err">“</span><span class="n">java_home</span><span class="err">”</span><span class="p">:</span> <span class="n">attr</span><span class="o">.</span><span class="n">string</span><span class="p">(</span><span class="n">mandatory</span><span class="o">=</span><span class="bp">False</span><span class="p">),</span>
+     <span class="err">“</span><span class="n">java_version</span><span class="err">”</span><span class="p">:</span> <span class="n">attr</span><span class="o">.</span><span class="n">string</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="err">“</span><span class="mf">1.8</span><span class="err">”</span><span class="p">),</span>
+  <span class="p">}</span>
+</code></pre></div></div>
+
+<p>This statement takes only 2 arguments: an implementation function and
+a list of attributes. The syntax is similar to the rule statement but
+attributes can only takes primitive type (String, Label, Integer,
+Boolean, …) and not artifacts.</p>
+
+<p>The implementation function takes exactly one argument: the repository
+context. This context will provides many convenience methods for doing
+non hermetic operations, e.g., :</p>
+
+<ul>
+  <li>For discovering the environment:
+    <ul>
+      <li>access system environment (<code class="highlighter-rouge">ctxt.os</code>),</li>
+      <li>execute a program and get the standard output (<code class="highlighter-rouge">ctxt.execute</code>) to
+discover the environment,</li>
+      <li>…</li>
+    </ul>
+  </li>
+  <li>For creating the remote repository:
+    <ul>
+      <li>fetch an artifact from URL (<code class="highlighter-rouge">ctxt.download</code>),</li>
+      <li>uncompress an artifact (<code class="highlighter-rouge">ctxt.path(...).uncompress(outputPath)</code>),</li>
+      <li>“copy” a directory from the system (<code class="highlighter-rouge">ctx.fetch_path(...)</code>),</li>
+      <li>create a build file (<code class="highlighter-rouge">ctxt.build_file(...)</code>)</li>
+      <li>…</li>
+    </ul>
+  </li>
+</ul>
+
+<p>The precise list of methods the repository context will support will
+be augmented on-demand depending on what makes sense for our users.</p>
+
+<h2 id="how">How?</h2>
+
+<p>A preliminary quick and dirty prototype can be found
+<a href="https://github.com/damienmg/bazel/commit/3a483ab53e547ae677599215faa9e3398bbd06ba">here</a>
+and
+<a href="https://github.com/damienmg/bazel/commit/c40bd9c71965f0a8c85b732a0b0c3dbe31e017cf">here</a>.</p>
+
+<p>Here what the prototype does:</p>
+
+<ol>
+  <li><a href="https://github.com/damienmg/bazel/commit/3a483ab53e547ae677599215faa9e3398bbd06ba">First commit</a>
+  activate Skylark macros and repositories
+a. Allow Skylark load statements in the WORKSPACE file by adding
+   the various hook and a WorkspaceContext.
+b. A new repository_rule in Skylark that can be called only from
+   the WORKSPACE file.
+c. A new repository context that is passed to repository rule and
+   that should contain all the non-hermetic stuff so the rest of
+   skylark stays hermetic.
+d. A bit of hack for tweaking the SkylarkNativeModule when in
+   WORKSPACE file to comply with the structure of the WORKSPACE
+   rules.
+e. A dirty hack to load the SkylarkRepositoryFunction as a Skylark
+   module without breaking the package boundaries. This is due of
+   technical debts on loading Skylark module nicely (there is a TODO
+   to do it correctly).</li>
+  <li><a href="https://github.com/damienmg/bazel/commit/c40bd9c71965f0a8c85b732a0b0c3dbe31e017cf">Second commit</a>
+ showcase the usage of Skylark remote repositories as a configuration step.
+a. Add an example for fetching JDK dependencies. It does both the
+   detection and the fetching.
+b. Add the necessary methods in the SkylarkRepositoryContext for
+   making the example work.
+c. Added the search method to the Skylark string object (to do a
+   regex search).</li>
+</ol>
+
+<h2 id="roadmap">Roadmap</h2>
+
+<p>The obvious choice for the roadmap is to remake all those works,
+correctly commented and tested, and then add methods to the
+SkylarkRepositoryContext for full support.
+More precisely the correct order of the work should be:</p>
+
+<ol>
+  <li>Activate Skylark Macros taking part of 1.a and doing correctly 1.d
+[<a href="https://github.com/bazelbuild/bazel/commit/8ca065c2ae941309b53f95313a68e585ecc70560">DONE</a>]</li>
+  <li>Fix Skylark module load (1.e)
+[<a href="https://github.com/bazelbuild/bazel/commit/f81c675928c6beeaae5f66480dc7dbef47f75fb8">DONE</a>]</li>
+  <li>Add the SkylarkRepositoryFunction and empty context (1.b and 1.c)
+[<a href="https://github.com/bazelbuild/bazel/commit/653df8813dd74042e8e084eeae238a8b9f16a3ca">DONE</a>]</li>
+  <li><a href="/designs/2016/02/16/cpp-autoconf.html">Extends SkylarkRepositoryContext for handling C++ configuration</a>
+[<a href="https://github.com/bazelbuild/bazel/commit/8fa5ae6a6364100f2a7f9130e62eb0edb447339a">DONE</a>]</li>
+  <li>Extends SkylarkRepositoryContext
+[<a href="https://github.com/bazelbuild/bazel/commit/97f2c842ae706eccd822d8d264aba66c6102bade">DONE</a>]
+for handling PyPI</li>
+  <li>Document
+[<a href="/docs/skylark/repository_rules.html">DONE</a>]</li>
+  <li>Extends SkylarkRepositoryContext for handling Docker pull</li>
+</ol>
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: Skylark Remote Repositories&body=Documentation URL: https://docs.bazel.build/designs/2015/07/02/skylark-remote-repositories.html&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#context">Context</a></li>
+<li class="toc-entry toc-h2"><a href="#why">Why?</a></li>
+<li class="toc-entry toc-h2"><a href="#user-interface-see-the-jdk-example">User interface (see the JDK example)</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#macros">Macros</a></li>
+<li class="toc-entry toc-h3"><a href="#remote-repository-rule">Remote repository rule</a></li>
+</ul>
+</li>
+<li class="toc-entry toc-h2"><a href="#how">How?</a></li>
+<li class="toc-entry toc-h2"><a href="#roadmap">Roadmap</a></li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>

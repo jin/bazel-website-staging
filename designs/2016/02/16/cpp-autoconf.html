@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Generating C++ crosstool with a Skylark Remote Repository - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/designs/2016/02/16/cpp-autoconf.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="Generating C++ crosstool with a Skylark Remote Repository">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <h1 id="design-document-generating-c-crosstool-with-a-skylark-remote-repository">Design Document: Generating C++ crosstool with a Skylark Remote Repository</h1>
+
+<p><strong>Design documents are not descriptions of the current functionality of Bazel.
+Always go to the documentation for current information.</strong></p>
+
+<p><strong>Status:</strong> implemented</p>
+
+<p><strong>Author:</strong> dmarting@google.com</p>
+
+<p><strong>Reviewers:</strong> lberki@google.com</p>
+
+<p><strong>Design document published</strong>: 16 February 2016</p>
+
+<h2 id="context">Context</h2>
+
+<p><a href="/docs/skylark/index.html">Skylark</a> is the
+extension language for Bazel and  lets Bazel users describe the
+build for new languages easily. External users do not create
+native rules and we want to avoid them doing so.</p>
+
+<p><a href="/docs/external.html">Remote repositories</a>
+are a convenient way to specify your third party dependencies
+and to fetch them along with the build if you don’t want to
+check them in your repository.</p>
+
+<p><a href="/designs/2015/07/02/skylark-remote-repositories.html">Skylark remote
+repositories</a> is
+an ongoing effort to support specifying new remote repositories using
+Skylark.</p>
+
+<h2 id="why">Why?</h2>
+
+<p>Configurability issues are stopping users from compiling and using
+Bazel on complex setup. In particular,
+<a href="https://tensorflow.io">TensorFlow</a>’s users runs on
+various hardware where gcc is installed on non-standard directory that
+needs to change the
+<a href="https://github.com/bazelbuild/bazel/blob/6b6ff76945c80fb8b11b71d402b5146c85b86859/tools/cpp/CROSSTOOL">CROSSTOOL</a>
+file (see
+<a href="https://github.com/bazelbuild/bazel/issues/531">issue #531</a>).
+This generally requires to change the list of include directories, the
+path to gcc and sometimes also the linking option to find the correct
+libraries at runtime. Some platform even requires
+<a href="https://github.com/bazelbuild/bazel/blob/6b6ff76945c80fb8b11b71d402b5146c85b86859/tools/cpp/osx_gcc_wrapper.sh">special wrappers around gcc</a>.</p>
+
+<p>Java solved the problem by setting a custom repository
+(<a href="https://github.com/bazelbuild/bazel/blob/6b6ff76945c80fb8b11b71d402b5146c85b86859/src/main/java/com/google/devtools/build/lib/bazel/rules/java/jdk.WORKSPACE#L3">@local_jdk</a>)
+where the path is automatically detected using the <a href="https://github.com/bazelbuild/bazel/blob/6b6ff76945c80fb8b11b71d402b5146c85b86859/src/main/java/com/google/devtools/build/lib/packages/WorkspaceFactory.java#L414">location of the JVM
+running
+Bazel</a>.
+But this approach does not scale well with complex language setup like
+C++.</p>
+
+<p>We reduced the number of C++ issues the user had with removing all C++
+compilation in the bootstrap of Bazel. However, to properly handle
+those platform, Bazel needs some level of auto-configuration
+(<a href="https://github.com/google/kythe/blob/a29f0adc6fa11550f66bc2278f17b89b9e02de18/setup_bazel.sh">Kythe</a>
+and
+<a href="https://github.com/tensorflow/tensorflow/blob/a81c4f9cd01563e97fc6f179e4d70960fc9b02ae/configure">Tensorflow</a>
+have their own auto-configuration scripts). This document discuss how
+to use a skylark remote repository to implement a simple
+auto-configuration for C++ crosstool (step 4 of the roadmap from the
+<a href="/design/2015/07/02/skylark-remote-repositories.html">Skylark remote
+repositories</a>
+document).</p>
+
+<h2 id="c-toolchain-detection">C++ toolchain detection</h2>
+
+<p>Until now here the various issues user have faced using a custom C++
+toolchain:</p>
+
+<ol>
+  <li>C++ compiler is not at the expected location.</li>
+  <li>C++ compiler is <code class="highlighter-rouge">clang</code> and not <code class="highlighter-rouge">gcc</code> or behaves differently than
+what Bazel C++ rules expect.</li>
+  <li>Libraries are not in the default location.</li>
+  <li>Headers are not in the default location.</li>
+  <li>Path of libraries or headers are outside of the default mounted
+paths.</li>
+</ol>
+
+<p>The current fix we propose to the user for the various issue are:</p>
+
+<ol>
+  <li>Change the tool paths in
+<a href="https://github.com/bazelbuild/bazel/blob/6b6ff76945c80fb8b11b71d402b5146c85b86859/tools/cpp/CROSSTOOL#L87">tools/cpp/CROSSTOOL#L87</a>.</li>
+  <li>Add a wrapper like
+<a href="https://github.com/bazelbuild/bazel/blob/6b6ff76945c80fb8b11b71d402b5146c85b86859/tools/cpp/osx_gcc_wrapper.sh">tools/cpp/osx_gcc_wrapper.sh</a>
+and modify some options from the CROSSTOOL file.</li>
+  <li>Add <code class="highlighter-rouge">-Wl,rpath,</code> option to the
+<a href="https://github.com/bazelbuild/bazel/blob/6b6ff76945c80fb8b11b71d402b5146c85b86859/tools/cpp/CROSSTOOL#L93">linker_flags</a>.</li>
+  <li>Add the directories to the
+<a href="https://github.com/bazelbuild/bazel/blob/6b6ff76945c80fb8b11b71d402b5146c85b86859/tools/cpp/CROSSTOOL#L100">cxx_builtin_include_dirs</a>.</li>
+  <li>Deactivate sandboxing</li>
+</ol>
+
+<p>To address those issues, we propose to add the followings methods to
+the repository context object:</p>
+
+<ol>
+  <li><code class="highlighter-rouge">which(cmd)</code> returns the path to the binary designed by <code class="highlighter-rouge">cmd</code>,
+looking for it in the path environment variable (or equivalent).
+This will help getting the path to the C++ compiler.</li>
+  <li><code class="highlighter-rouge">execute([arg0, arg1, ..., argn])</code> executes a command and returns an
+<code class="highlighter-rouge">exec_result</code> struct containing:
+    <ul>
+      <li><code class="highlighter-rouge">stdout</code> the content of the standard output,</li>
+      <li><code class="highlighter-rouge">stderr</code> the content of the standard error output, and</li>
+      <li><code class="highlighter-rouge">return_code</code> the return code of the execution.
+Executing <code class="highlighter-rouge">$(CC)</code> will help detect whether we are using gcc or
+clang.</li>
+    </ul>
+  </li>
+  <li>An <code class="highlighter-rouge">os</code> object with an environ map containing the list of
+environment variable. The os object will be extended to
+contains all OS specific variables (platform name and much more).</li>
+  <li><code class="highlighter-rouge">execute([..])</code> from 2 will be used to run <a href="http://stackoverflow.com/questions/11946294/dump-include-paths-from-g"><code class="highlighter-rouge">gcc ...
+-v</code></a>
+to list the built-in include directories.
+To address the issue 5, we can add the list of paths to dependencies to the
+<a href="https://github.com/bazelbuild/bazel/wiki/Building-with-a-custom-toolchain">crosstool rule in the BUILD
+file</a>.</li>
+</ol>
+
+<h2 id="writing-the-cpp-package">Writing the cpp package</h2>
+
+<p>Once we have resolved all the information from the system, we need to
+write two or three files:</p>
+
+<ul>
+  <li>The <code class="highlighter-rouge">BUILD</code> file that will contains the corresponding
+<code class="highlighter-rouge">cc_toolchain</code> rules</li>
+  <li>The <code class="highlighter-rouge">CROSSTOOL</code> file</li>
+  <li>Optionally, the wrapper script.</li>
+</ul>
+
+<p>We should extends the context with a <code class="highlighter-rouge">file(path, content)</code> method, where
+path is a path relative to the repository root and content the content
+of the file to write.</p>
+
+<p>To ease the writing of crosstool, we should also provide a
+<code class="highlighter-rouge">template(path, label, variables)</code> method which will write the file
+pointed by path using the file pointed by label (should be a
+FileValue) in which variables have been replaced in the same way that
+<a href="http://bazel.build/docs/skylark/lib/ctx.html#template_action">template_action</a>
+works.</p>
+
+<h2 id="rollout-plan">Rollout plan</h2>
+
+<p>The implementation plan would be:</p>
+
+<ol>
+  <li>Implements <code class="highlighter-rouge">which</code>, <code class="highlighter-rouge">execute</code>, <code class="highlighter-rouge">os</code>, <code class="highlighter-rouge">file</code> and <code class="highlighter-rouge">template</code>
+[<strong>DONE</strong>]</li>
+  <li>Write the <code class="highlighter-rouge">cc_configure</code> repository rule which does the work. Use
+GitHub bugs as inputs on which platform to support. [<strong>DONE</strong>]</li>
+  <li>Advertise the existence of <code class="highlighter-rouge">cc_configure</code> [<strong>DONE</strong>]</li>
+</ol>
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: Generating C++ crosstool with a Skylark Remote Repository&body=Documentation URL: https://docs.bazel.build/designs/2016/02/16/cpp-autoconf.html&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#context">Context</a></li>
+<li class="toc-entry toc-h2"><a href="#why">Why?</a></li>
+<li class="toc-entry toc-h2"><a href="#c-toolchain-detection">C++ toolchain detection</a></li>
+<li class="toc-entry toc-h2"><a href="#writing-the-cpp-package">Writing the cpp package</a></li>
+<li class="toc-entry toc-h2"><a href="#rollout-plan">Rollout plan</a></li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>

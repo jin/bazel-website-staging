@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sandboxing - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/designs/2016/06/02/sandboxing.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="Sandboxing">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <h1 id="design-document-bazel-sandboxing-20">Design Document: Bazel Sandboxing 2.0</h1>
+
+<p><strong>Design documents are not descriptions of the current functionality of Bazel.
+Always go to the documentation for current information.</strong></p>
+
+<p><strong>Status:</strong> launched</p>
+
+<p><strong>Author:</strong> <a href="mailto:philwo@google.com">philwo@google.com</a></p>
+
+<p><strong>Design document published</strong>: 02 June 2016</p>
+
+<p>The section “Handling of environment variables” inspired and was then
+superseded by the more detailed
+<a href="/docs/designs/2016/06/21/environment.html">Specifying environment variables</a>
+design document.</p>
+
+<h2 id="current-situation">Current situation</h2>
+
+<p>Tools that use undeclared input files (files that are not explicitly listed in
+the dependencies of an action) are a problem, as Bazel cannot keep track of them
+and thus they can cause builds to become incorrect: When one of the undeclared
+input files changes, Bazel will still believe that the build is up-to-date and
+won’t rebuild the action - resulting in an incorrect incremental build.</p>
+
+<p>Bazel uses sandboxing to prevent tools (e.g. compilers, linkers, …) from
+accidentally working with input files that are not a declared dependency of an
+action - the idea is to run each tool in an environment that contains only the
+explicitly declared input files of the action. Thus, there simply are no other
+files that a tool could access.</p>
+
+<p>In theory this works well, but as nearly all Bazel users rely at least on some
+tools provided by their operating system (e.g. <code class="highlighter-rouge">/usr/bin/zip</code>, <code class="highlighter-rouge">/usr/bin/gcc</code>),
+which in turn require shared libraries, helper tools or data from other parts
+of the installed OS, Bazel currently mounts a number of hard-coded directories
+from the operating system into the sandbox in addition to the explicitly
+declared inputs.</p>
+
+<p>However, even with that some users continue to run into issues, making Bazel
+hard to use - e.g. the compiler they want to use is in a directory that’s not
+part of the hard-coded list (such as <code class="highlighter-rouge">/usr/local</code> or <code class="highlighter-rouge">/opt</code>) or the tool needs
+access to device files (e.g. the nVidia CUDA SDK).</p>
+
+<h2 id="proposal">Proposal</h2>
+
+<p>We think that it’s time to revisit how we do sandboxing in the default settings
+of Bazel. Sandboxing was intended to protect the user from forgetting to
+declare explicit dependencies between their targets and to protect from tests
+or tools accidentally writing all over the hard-disk (e.g. a test that wants to
+clean up its temporary work directory via rm -rf and unfortunately wipes the
+whole disk), not so much for protecting against an operating system having any
+influence on the build. For these users, the current sandboxing with its
+hard-coded list of allowed directories is too strict.</p>
+
+<p>On the other hand, some people absolutely do want 100% reproducible and
+hermetic builds - and for them the current sandboxing actually isn’t strict
+enough, as it allows access to various files from the operating system.</p>
+
+<p>We believe we have found a solution that satisfies the demands of all users:</p>
+
+<ul>
+  <li>Bazel sandboxing will by default recursively mount the root directory <code class="highlighter-rouge">/</code>
+into each sandbox in read-only mode, excluding the workspace directory (so
+that source files cannot be read from that well-known path) and with a new
+empty, writable execroot that contains the declared inputs of the action.</li>
+  <li>In addition, Bazel will allow to mount a ‘base image’ or ‘base directory’ as
+the root directory of the sandbox, thus completely removing any connection
+to the operating system the user is running Bazel under. For example, a
+project might decide that all builds should be done inside a standardized
+Ubuntu 16.04 LTS environment containing certain versions of gcc, etc., that
+is shipped as a base image. Now, even if the developer uses Arch Linux or
+CentOS on their machine, they can build using the same environment as
+everyone else, thus getting the exact same and reproducible outputs.</li>
+</ul>
+
+<h3 id="base-images">Base images</h3>
+
+<p>Base images are simply <code class="highlighter-rouge">.tar.gz</code>’s of a directory structure that contains all
+files necessary to execute binaries in, e.g. the output of “debootstrap” or
+what you would usually “chroot” in and then run a tool inside. They should be
+referred to via labels and could for example be downloaded from somewhere via
+a <code class="highlighter-rouge">http_file</code> rule in the WORKSPACE.</p>
+
+<p>We’re investigating if we can reuse
+<a href="https://github.com/opencontainers/image-spec/blob/v0.1.0/serialization.md">Docker images (OCI)</a>
+for this, which would make it easier for users to get started with this
+feature.</p>
+
+<h3 id="handling-of-environment-variables">Handling of environment variables</h3>
+
+<p>As part of this project, we also propose to change the handling of environment
+variables (e.g. <code class="highlighter-rouge">PATH</code>) in Bazel, as we believe they are an important part of
+the configuration of the environment that the build runs in.</p>
+
+<p>As an example, Bazel currently [resets PATH to a hard-coded string]
+(https://github.com/bazelbuild/bazel/blob/master/src/main/java/com/google/devtools/build/lib/bazel/rules/BazelConfiguration.java),
+which may not be suitable for the environment that it actually runs in - e.g.
+if a user installs a tool called <code class="highlighter-rouge">babel</code> in <code class="highlighter-rouge">/usr/local/bin</code> and they call
+<code class="highlighter-rouge">babel</code> in a shell script or Skylark rule they wrote, [they expect it to just
+work] (https://github.com/bazelbuild/bazel/issues/884). We can argue that they
+instead should check in their tool to the repository and not rely on <code class="highlighter-rouge">PATH</code>
+lookup to find it, however this is sometimes not possible due to:</p>
+
+<ul>
+  <li>Users just don’t think it’s feasible and instead want to take whatever is
+installed on the system,</li>
+  <li>Bazel’s restrictions in valid package label identifiers (<a href="https://github.com/bazelbuild/bazel/issues/884#issuecomment-183378680">you can’t check in
+nodejs</a>
+into your repository or even make it part of a filegroup, because it
+contains files that have characters like <code class="highlighter-rouge">$</code> that are currently illegal from
+Bazel’s point of view, though that may change in the future),</li>
+  <li>Licensing restrictions that disallow users checking in certain tools (such
+as XCode).</li>
+</ul>
+
+<p>The proposal how Bazel should decide whether an environment variable should be
+included in the environment of a Spawn is:</p>
+
+<ul>
+  <li>If <code class="highlighter-rouge">use_default_shell_env</code> is <code class="highlighter-rouge">True</code>, set <code class="highlighter-rouge">PATH</code> and <code class="highlighter-rouge">TMPDIR</code> env vars
+(as we currently do).</li>
+  <li>If a rule declares its need for an environment variable, take it.
+    <ul>
+      <li>We already have an [“env” attribute in Skylark actions]
+(http://www.bazel.build/docs/skylark/lib/ctx.html#action) that allows one to
+set variables to hard-coded strings, we have <code class="highlighter-rouge">use_default_shell_env</code> in
+Skylark actions, which pulls in <code class="highlighter-rouge">PATH</code> and <code class="highlighter-rouge">TMPDIR</code>, but we don’t have any
+way to just say “This rule needs this environment variable”. Laurent
+suggested that we discuss this later, as adding yet another attribute is
+annoying - maybe there’s some way we can fold all these use cases into one
+attribute.</li>
+      <li>We might want to add the same attribute to genrule as well then.</li>
+    </ul>
+  </li>
+  <li>Don’t include any other environment variables.</li>
+</ul>
+
+<p>If Bazel decided that an environment variable is needed by a rule, the next
+step is to figure out its value. The proposal how Bazel should decide the value
+of an environment variable is:</p>
+
+<ul>
+  <li>If an environment variable is overridden in the <code class="highlighter-rouge">WORKSPACE.local</code> file
+(“machine-specific settings”), take it from there.</li>
+  <li>If an environment variable is overridden in the <code class="highlighter-rouge">WORKSPACE</code> file
+(“project-specific settings”), always take the value from there.</li>
+  <li>If not and we use a base image, take the environment variable from its
+specification (as in OCI).</li>
+  <li>If not, take it from the user’s environment.</li>
+</ul>
+
+<p>If an environment variable that is used by a rule changed compared to when it
+was built last time, its target has to be rebuild for correctness.</p>
+
+<p>Bazel should instead use <code class="highlighter-rouge">PATH</code> from the environment and for correctness
+trigger a rebuild when it changes.</p>
+
+<p><em>Open question: Should the whitelist of environment variables be configurable,
+e.g. in the WORKSPACE file?</em></p>
+
+<h3 id="what-files-does-a-sandboxed-process-have-access-to">What files does a sandboxed process have access to?</h3>
+
+<p>Ideally, we would want to execute SpawnActions in an environment that looks like this:</p>
+
+<ul>
+  <li>Allows read access to everything in /.
+    <ul>
+      <li>Except the workspace (e.g. /home/philwo/src/bazel).</li>
+      <li>Except the “real” execroot (e.g. /tmp/_bazel_philwo/6d3feea2bf88e88127079b36d7ddade1/execroot).</li>
+      <li>Except a user-configurable set of blacklisted files or directories (e.g. /var/secret).</li>
+    </ul>
+  </li>
+  <li>Has a separate execroot just for this action: /tmp/_bazel_philwo/6d3feea2bf88e88127079b36d7ddade1/execroot-1
+    <ul>
+      <li>which only contains the input files listed for the action.</li>
+      <li>to which the output files will be written.</li>
+      <li>from which the output files will be moved to the real execroot after successful execution.</li>
+    </ul>
+  </li>
+  <li>Processes can write wherever they naturally have permission to do so.
+    <ul>
+      <li>However, writes have no influence on the host system, instead they are redirected into a separate folder (see: overlayfs’s upperdir).</li>
+    </ul>
+  </li>
+</ul>
+
+<h4 id="open-issues">Open issues</h4>
+
+<ul>
+  <li>We don’t know a way to hide the workspace, while still making selected input files out of it available inside the new execroot. Ideas we tried:
+    <ul>
+      <li>copying: Works, but too slow.</li>
+      <li>hard-linking: Does not work when workspace and output_base are on different filesystems.</li>
+      <li>bind mounting them: Works only on Linux, does not scale (the mount syscall becomes really slow once you’re at &gt;20000 active mounts).</li>
+      <li>building a custom FUSE filesystem: Might work, but lots of effort.</li>
+    </ul>
+  </li>
+  <li>How to hide files from the sandboxed process?
+    <ul>
+      <li>There seems to be no good way to “hide” files on Linux or macOS.</li>
+      <li>The best we can do on both systems is to make them unreadable.</li>
+    </ul>
+  </li>
+  <li>overlayfs is not usable for our purposes, because it requires root on all systems except Ubuntu.</li>
+</ul>
+
+<h4 id="what-can-we-do-today">What can we do today?</h4>
+
+<p>This is what Bazel is doing for sandboxing at the moment:</p>
+
+<ul>
+  <li>Allows read access to everything in /.
+    <ul>
+      <li>Except a <a href="https://github.com/bazelbuild/bazel/blob/0f119a4db515105217244e4db5d4fed9371ef1a4/src/main/java/com/google/devtools/build/lib/sandbox/SandboxOptions.java#L96">user-configurable</a> set of blacklisted files or directories (e.g. /var/secret).</li>
+    </ul>
+  </li>
+  <li>Has a separate execroot just for this action: /tmp/_bazel_philwo/6d3feea2bf88e88127079b36d7ddade1/execroot-1
+    <ul>
+      <li>which contains symlinks to the input files listed for the action (the targets are in the workspace or the “real” execroot).</li>
+      <li>to which the output files will be written.</li>
+      <li>from which the output files will be moved to the real execroot after successful execution.</li>
+    </ul>
+  </li>
+  <li>Processes can only write to their private execroot and a private $TMPDIR.</li>
+</ul>
+
+<h3 id="related-links">Related links</h3>
+
+<ul>
+  <li><a href="https://github.com/bazelbuild/bazel/issues?q=is%3Aopen+is%3Aissue+label%3A%22category%3A+sandboxing%22">Known issues in this area of work</a></li>
+</ul>
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: Sandboxing&body=Documentation URL: https://docs.bazel.build/designs/2016/06/02/sandboxing.html&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#current-situation">Current situation</a></li>
+<li class="toc-entry toc-h2"><a href="#proposal">Proposal</a>
+<ul class="page-toc-sublist">
+<li class="toc-entry toc-h3"><a href="#base-images">Base images</a></li>
+<li class="toc-entry toc-h3"><a href="#handling-of-environment-variables">Handling of environment variables</a></li>
+<li class="toc-entry toc-h3"><a href="#what-files-does-a-sandboxed-process-have-access-to">What files does a sandboxed process have access to?</a></li>
+<li class="toc-entry toc-h3"><a href="#related-links">Related links</a></li>
+</ul>
+</li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>

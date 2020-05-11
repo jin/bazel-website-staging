@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="https://schema.org/WebPage">
+    <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Skyframe - Bazel</title>
+
+    <script>
+      var current_url = window.location.href;
+      
+      // Do a shortcut so that be.bazel.build redirect to the build encyclopedia
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/overview.html"));
+      }
+      var be_url = new RegExp("^https?://be(\.bazel.build)?/([a-zA-Z0-9_-]+)([/#](.*))?");
+      if (be_url.test(current_url)) {
+        window.location.replace(current_url.replace(be_url, "https://docs.bazel.build/be/$2.html#$4"));
+      }
+      // And a short to code reviews
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/([0-9]+)")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/c/$2"));
+      }
+      // Code review dashboard
+      var cr_url = new RegExp("^https?://cr(\.bazel.build)?/?")
+      if (cr_url.test(current_url)) {
+        window.location.replace(current_url.replace(cr_url, "https://bazel-review.googlesource.com/"));
+      }
+    </script>
+
+    <link rel="canonical" href="/designs/skyframe.html">
+
+    <!-- Webfont -->
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro:400,500,700|Open+Sans:400,600,700,800" rel="stylesheet">
+
+    <link rel="icon" type="image/png" href="/images/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/images/favicon-16x16.png" sizes="16x16">
+
+    <!-- Bootstrap -->
+    <link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/assets/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" type="text/css" href="/css/main.css">
+
+    <!-- metadata -->
+    <meta name="og:title" content="Skyframe">
+    <meta name="og:image" content="https://bazel.build/images/bazel-og-image.png">
+  </head>
+
+  <body>
+        <nav id="common-nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/">
+            <img class="navbar-logo" src="/images/bazel-navbar.svg">
+          </a>
+        </div>
+
+        <!-- Collect the nav links, forms, and other content for toggling -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://github.com/bazelbuild/bazel">
+                <span class="hidden-sm">GitHub</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-github"></i></span>
+              </a>
+            </li>
+          </ul>
+          <form class="navbar-form navbar-right" action="/search.html" id="cse-search-box">
+            <div class="form-group">
+              <input type="hidden" name="cx" value="009927877080525621790:2pxlpaexqpc">
+              <input type="hidden" name="cof" value="FORID:10">
+              <input type="hidden" name="ie" value="UTF-8">
+              <input type="search" name="q" id="q" class="form-control input-sm" placeholder="Search">
+            </div>
+          </form>
+          <ul class="nav navbar-nav navbar-right">
+            <li>
+              <a href="https://docs.bazel.build">Documentation</a>
+            </li>
+            <li>
+              <a href="/contributing.html">Contribute</a>
+            </li>
+            <li>
+              <a href="https://blog.bazel.build">
+                <span class="hidden-sm">Blog</span>
+                <span class="nav-icon visible-sm"><i class="fa fa-rss"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="https://twitter.com/bazelbuild">
+                <span class="visible-xs">Twitter</span>
+                <span><i class="nav-icon fa fa-twitter hidden-xs"></i></span>
+              </a>
+            </li>
+            <li>
+              <a href="http://stackoverflow.com/questions/tagged/bazel">
+                <span class="visible-xs">StackOverflow</span>
+                <span><i class="nav-icon fa fa-stack-overflow hidden-xs"></i></span>
+              </a>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+
+    <div class="container vpad">
+      <div class="row">
+        <div class="col-md-2">
+          <a class="btn btn-default btn-lg btn-block sidebar-toggle"
+              data-toggle="collapse" href="#sidebar-nav" aria-expanded="false"
+              aria-controls="sidebar-nav">
+            <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+          </a>
+          <nav class="sidebar collapse" id="sidebar-nav">
+            <ul class="sidebar-nav">
+              <li><a href="/contributing.html">Contributing to Bazel</a></li>
+              <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel</a></li>
+              <li><a href="/governance.html">Governance</a></li>
+              <li><a href="/roadmap.html">Roadmap</a></li>
+              <li><a href="/naming.html">Naming Bazel projects</a></li>
+              <li><a href="/support.html">Support</a></li>
+            </ul>
+            <h3>Technical Docs</h3>
+            <ul class="sidebar-nav">
+              <li><a href="/designs/skyframe.html">Skyframe</a></li>
+              <li><a href="/maintainers-guide.html">Guide for Bazel Maintainers</a></li>
+              <li><a href="/designs/index.html">Design Documents</a></li>
+              <li><a href="/breaking-changes-guide.html">Rolling out breaking changes</a></li>
+              <li><a href="/release-notes.html">Release Notes</a></li>
+              <li><a href="/recommended-rules.html">Recommended Rules</a></li>
+              <li><a href="/windows-chocolatey-maintenance.html">Maintaining Bazel Chocolatey package on Windows</a></li>
+              <li><a href="/windows-scoop-maintenance.html">Maintaining Bazel Scoop package on Windows</a></li>
+            </ul>
+            <h3>External Resources</h3>
+            <ul class="sidebar-nav">
+              <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+              <li><a href="https://source.bazel.build/">Search Bazel code</a></li>
+              <li><a href="/browse-and-search-user-guide.html">Search user guide</a></li>
+              <li><a href="https://groups.google.com/forum/#!forum/bazel-dev">Developer mailing list</a></li>
+              <li><a href="https://slack.bazel.build">Slack</a></li>
+              <li><a href="/experts.html">Community Experts</a></li>
+            </ul>
+          </nav>
+        </div>
+        <div class="col-md-8">
+          <h1 id="skyframe">Skyframe</h1>
+
+<p class="lead">The parallel evaluation and incrementality model of Bazel</p>
+
+<h2 id="data-model">Data model</h2>
+
+<p>The data model consists of the following items:</p>
+
+<ul>
+  <li><code class="highlighter-rouge">SkyValue</code>. Also called nodes. <code class="highlighter-rouge">SkyValues</code> are immutable objects that contain all the data built
+over the course of the build and the inputs of the build. Examples are: input files, output
+files, targets and configured targets.</li>
+  <li><code class="highlighter-rouge">SkyKey</code>. A short immutable name to reference a <code class="highlighter-rouge">SkyValue</code>, for example, <code class="highlighter-rouge">FILECONTENTS:/tmp/foo</code>
+or <code class="highlighter-rouge">PACKAGE://foo</code>.</li>
+  <li><code class="highlighter-rouge">SkyFunction</code>. Builds nodes based on their keys and dependent nodes.</li>
+  <li>Node graph. A data structure containing the dependency relationship between nodes.</li>
+  <li><code class="highlighter-rouge">Skyframe</code>. Code name for the incremental evaluation framework Bazel is based on.</li>
+</ul>
+
+<h2 id="evaluation">Evaluation</h2>
+
+<p>A build consists of evaluating the node that represents the build request (this is the state we are
+striving for, but there is a lot of legacy code in the way). First its <code class="highlighter-rouge">SkyFunction</code> is found and
+called with the key of the top-level <code class="highlighter-rouge">SkyKey</code>. The function then requests the evaluation of the
+nodes it needs to evaluate the top-level node, which in turn result in other function invocations,
+and so on, until the leaf nodes are reached (which are usually nodes representing input files in
+the file system). Finally, we end up with the value of the top-level <code class="highlighter-rouge">SkyValue</code>, some side effects
+(e.g. output files in the file system) and a directed acyclic graph of the dependencies between the
+nodes that were involved in the build.</p>
+
+<p>A <code class="highlighter-rouge">SkyFunction</code> can request <code class="highlighter-rouge">SkyKeys</code> in multiple passes if it cannot tell in advance all of the
+nodes it needs to do its job. A simple example is evaluating an input file node that turns out to
+be a symlink: the function tries to read the file, realizes that it’s a symlink, and thus fetches
+the file system node representing the target of the symlink. But that itself can be a symlink, in
+which case the original function will need to fetch its target, too.</p>
+
+<p>The functions are represented in the code by the interface <code class="highlighter-rouge">SkyFunction</code> and the services
+provided to it by an interface called <code class="highlighter-rouge">SkyFunction.Environment</code>. These are the things functions can
+do:</p>
+
+<ul>
+  <li>Request the evaluation of another node by way of calling <code class="highlighter-rouge">env.getValue</code>. If the node is
+available, its value is returned, otherwise, <code class="highlighter-rouge">null</code> is returned and the function itself is
+expected to return <code class="highlighter-rouge">null</code>. In the latter case, the dependent node is evaluated, and then the
+original node builder is invoked again, but this time the same <code class="highlighter-rouge">env.getValue</code> call will return a
+non-<code class="highlighter-rouge">null</code> value.</li>
+  <li>Request the evaluation of multiple other nodes by calling <code class="highlighter-rouge">env.getValues()</code>. This does
+essentially the same, except that the dependent nodes are evaluated in parallel.</li>
+  <li>Do computation during their invocation</li>
+  <li>Have side effects, for example, writing files to the file system. Care needs to be taken that two
+different functions do not step on each other’s toes. In general, write side effects (where
+data flows outwards from Bazel) are okay, read side effects (where data flows inwards into Bazel
+without a registered dependency) are not, because they are an unregistered dependency and as
+such, can cause incorrect incremental builds.</li>
+</ul>
+
+<p><code class="highlighter-rouge">SkyFunction</code> implementations should not access data in any other way than requesting dependencies
+(e.g. by directly reading the file system), because that results in Bazel not registering the data
+dependency on the file that was read, thus resulting in incorrect incremental builds.</p>
+
+<p>Once a function has enough data to do its job, it should return a non-<code class="highlighter-rouge">null</code> value indicating
+completion.</p>
+
+<p>This evaluation strategy has a number of benefits:</p>
+
+<ul>
+  <li>Hermeticity. If functions only request input data by way of depending on other nodes, Bazel
+can guarantee that if the input state is the same, the same data is returned. If all sky
+functions are deterministic, this means that the whole build will also be deterministic.</li>
+  <li>Correct and perfect incrementality. If all the input data of all functions is recorded, Bazel
+can invalidate only the exact set of nodes that need to be invalidated when the input data
+changes.</li>
+  <li>Parallelism. Since functions can only interact with each other by way of requesting
+dependencies, functions that do not depend on each other can be run in parallel and Bazel can
+guarantee that the result is the same as if they were run sequentially.</li>
+</ul>
+
+<h2 id="incrementality">Incrementality</h2>
+
+<p>Since functions can only access input data by depending on other nodes, Bazel can build up a
+complete data flow graph from the input files to the output files, and use this information to only
+rebuild those nodes that actually need to be rebuilt: the reverse transitive closure of the set of
+changed input files.</p>
+
+<p>In particular, two possible incrementality strategies exist: the bottom-up one and the top-down one.
+Which one is optimal depends on how the dependency graph looks like.</p>
+
+<ul>
+  <li>
+    <p>During bottom-up invalidation, after a graph is built and the set of changed inputs is known,
+all the nodes are invalidated that transitively depend on changed files. This is optimal
+if we know that the same top-level node will be built again.
+Note that bottom-up invalidation requires running <code class="highlighter-rouge">stat()</code> on all input files of the previous
+build to determine if they were changed. This can be improved by using <code class="highlighter-rouge">inotify</code> or a similar
+mechanism to learn about changed files.</p>
+  </li>
+  <li>
+    <p>During top-down invalidation, the transitive closure of the top-level node is checked and only
+those nodes are kept whose transitive closure is clean. This is better if we know that the
+current node graph is large, but we only need a small subset of it in the next build: bottom-up
+invalidation would invalidate the larger graph of the first build, unlike top-down invalidation,
+which just walks the small graph of second build.</p>
+  </li>
+</ul>
+
+<p>We currently only do bottom-up invalidation.</p>
+
+<p>To get further incrementality, we use <em>change pruning</em>: if a node is invalidated, but upon rebuild,
+it is discovered that its new value is the same as its old value, the nodes that were invalidated
+due to a change in this node are “resurrected”.</p>
+
+<p>This is useful, for example, if one changes a comment in a C++ file: then the <code class="highlighter-rouge">.o</code> file generated
+from it will be the same, thus, we don’t need to call the linker again.</p>
+
+<h2 id="incremental-linking--compilation">Incremental Linking / Compilation</h2>
+
+<p>The main limitation of this model is that the invalidation of a node is an all-or-nothing affair:
+when a dependency changes, the dependent node is always rebuilt from scratch, even if a better
+algorithm would exist that would mutate the old value of the node based on the changes. A few
+examples where this would be useful:</p>
+
+<ul>
+  <li>Incremental linking</li>
+  <li>When a single <code class="highlighter-rouge">.class</code> file changes in a <code class="highlighter-rouge">.jar</code>, we could theoretically modify the <code class="highlighter-rouge">.jar</code> file
+instead of building it from scratch again.</li>
+</ul>
+
+<p>The reason why Bazel currently does not support these things in a principled way (we have some
+measure of support for incremental linking, but it’s not implemented within Skyframe) is twofold:
+we only had limited performance gains and it was hard to guarantee that the result of the mutation
+is the same as that of a clean rebuild would be, and Google values builds that are bit-for-bit
+repeatable.</p>
+
+<p>Until now, we could always achieve good enough performance by simply decomposing an expensive build
+step and achieving partial re-evaluation that way: it splits all the classes in an app into
+multiple groups and does dexing on them separately. This way, if classes in a group do not change,
+the dexing does not have to be redone.</p>
+
+<h2 id="restarting-skyfunctions">Restarting SkyFunctions</h2>
+
+<p>Another inefficiency is that, currently, if a <code class="highlighter-rouge">SkyFunction</code> implementation cannot complete its job
+because one of its dependencies is missing, it needs to be completely restarted instead of resuming
+where it left off. This is currently not a big problem because we usually learn all the
+dependencies after a small amount of work. The only exceptions are package loading and execution of
+actions; these are both external processes that are expensive to restart. We allow package loading
+to proceed fully, store the loaded package away, record the dependencies in the graph, and on
+re-execution of the function return the already loaded package. I.e., we allow the function to keep
+state between executions.</p>
+
+<p>If this turns out to be a significant performance or code health problem, there are alternative ways
+to add a more principled mechanism to keep state between executions:</p>
+
+<ul>
+  <li>Splitting each node into multiple ones so that each smaller node only has to do one round of
+dependency discovery (effectively continuation passing); this requires explicit code.</li>
+  <li>By reimplementing Skyframe on some sort of lightweight thread infrastructure (e.g.
+<a href="http://docs.paralleluniverse.co/quasar/">Quasar</a>) so that function execution can be suspended
+and resumed without a large performance hit and without requiring this to be explicit in the
+code.</li>
+  <li>By maintaining state for each <code class="highlighter-rouge">SkyFunction</code> instance between restarts (this is the workaround we
+are using for package loading, but is not implemented as a first-class feature of the evaluation
+framework).</li>
+</ul>
+
+<h2 id="mapping-to-bazel-concepts">Mapping to Bazel concepts</h2>
+
+<p>This is a rough overview of some of the <code class="highlighter-rouge">SkyFunction</code> implementations Bazel uses to perform a build:</p>
+
+<ul>
+  <li><strong>FileStateValue</strong>. The result of an <code class="highlighter-rouge">lstat()</code>. For existent files, we also compute additional
+information in order to detect changes to the file. This is the lowest level node in the Skyframe
+graph and has no dependencies.</li>
+  <li><strong>FileValue</strong>. Used by anything that cares about the actual contents and/or resolved path of a
+file. Depends on the corresponding <code class="highlighter-rouge">FileStateValue</code> and any symlinks that need to be resolved
+(e.g. the <code class="highlighter-rouge">FileValue</code> for <code class="highlighter-rouge">a/b</code> needs the resolved path of <code class="highlighter-rouge">a</code> and the resolved path of <code class="highlighter-rouge">a/b</code>).
+The distinction between <code class="highlighter-rouge">FileStateValue</code> is important because in some cases (for example,
+evaluating file system globs (e.g. <code class="highlighter-rouge">srcs=glob(["*/*.java"])</code>) the contents of the file are not
+actually needed.</li>
+  <li><strong>DirectoryListingValue</strong>. Essentially the result of <code class="highlighter-rouge">readdir()</code>. Depends on the associated
+<code class="highlighter-rouge">FileValue</code> associated with the directory.</li>
+  <li><strong>PackageValue</strong>. Represents the parsed version of a BUILD file. Depends on the <code class="highlighter-rouge">FileValue</code> of
+the associated <code class="highlighter-rouge">BUILD</code> file, and also transitively on any <code class="highlighter-rouge">DirectoryListingValue</code> that is used
+to resolve the globs in the package (the data structure representing the contents of a <code class="highlighter-rouge">BUILD</code>
+file internally)</li>
+  <li><strong>ConfiguredTargetValue</strong>. Represents a configured target, which is a tuple of the set of actions
+generated during the analysis of a target and information provided to configured targets that
+depend on this one. Depends on the <code class="highlighter-rouge">PackageValue</code> the corresponding target is in, the
+<code class="highlighter-rouge">ConfiguredTargetValues</code> of direct dependencies, and a special node representing the build
+configuration.</li>
+  <li><strong>ArtifactValue</strong>. Represents a file in the build, be it a source or an output artifacts
+(artifacts are almost equivalent to files, and are used to refer to files during the actual
+execution of build steps). For source files, it depends on the <code class="highlighter-rouge">FileValue</code> of the associated
+node, for output artifacts, it depends on the <code class="highlighter-rouge">ActionExecutionValue</code> of whatever action generates
+the artifact.</li>
+  <li><strong>ActionExecutionValue</strong>. Represents the execution of an action. Depends on the <code class="highlighter-rouge">ArtifactValues</code>
+of its input files. The action it executes is currently contained within its sky key, which is
+contrary to the concept that sky keys should be small. We are working on solving this
+discrepancy (note that <code class="highlighter-rouge">ActionExecutionValue</code> and <code class="highlighter-rouge">ArtifactValue</code> are unused if we do not run the
+execution phase on Skyframe).</li>
+</ul>
+
+        </div>
+
+        <div class="col-md-2 sticky-sidebar">
+          <div class="right-sidebar">
+            <ul class="gh-links">
+                <li><a href="https://github.com/bazelbuild/bazel/issues/new?title=Documentation issue: Skyframe&body=Documentation URL: https://docs.bazel.build/designs/skyframe.html&labels=type: documentation"><i class="fa fa-github"></i> Create issue</a></li>
+            </ul>
+            <ul class="page-toc">
+<li class="toc-entry toc-h2"><a href="#data-model">Data model</a></li>
+<li class="toc-entry toc-h2"><a href="#evaluation">Evaluation</a></li>
+<li class="toc-entry toc-h2"><a href="#incrementality">Incrementality</a></li>
+<li class="toc-entry toc-h2"><a href="#incremental-linking--compilation">Incremental Linking / Compilation</a></li>
+<li class="toc-entry toc-h2"><a href="#restarting-skyfunctions">Restarting SkyFunctions</a></li>
+<li class="toc-entry toc-h2"><a href="#mapping-to-bazel-concepts">Mapping to Bazel concepts</a></li>
+</ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+        <footer class="footer">
+      <div class="container">
+  <div class="row">
+    <div class="col-sm-4 col-md-2">
+      <p>About</p>
+      <ul class="list-unstyled">
+        <li><a href="https://github.com/bazelbuild/bazel/wiki/Bazel-Users">Who's Using Bazel?</a></li>
+        <li><a href="/roadmap.html">Roadmap</a></li>
+        <li><a href="/contributing.html">Contribute</a></li>
+        <li><a href="/governance.html">Governance Plan</a></li>
+        <li><a href="https://policies.google.com/privacy">Privacy Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Support</p>
+      <ul class="list-unstyled">
+        <li><a href="https://docs.bazel.build">Documentation</a></li>
+        <li><a href="/faq.html">FAQ</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel/issues">Issue Tracker</a></li>
+        <li><a href="/experts.html">Community Experts</a></li>
+        <li><a href="http://stackoverflow.com/questions/tagged/bazel">Stack Overflow</a></li>
+        <li><a href="/support.html">Support Policy</a></li>
+      </ul>
+    </div>
+    <div class="col-sm-4 col-md-2">
+      <p>Stay Connected</p>
+      <ul class="list-unstyled">
+        <li><a href="https://twitter.com/bazelbuild">Twitter</a></li>
+        <li><a href="https://blog.bazel.build">Blog</a></li>
+        <li><a href="https://github.com/bazelbuild/bazel">GitHub</a></li>
+        <li><a href="https://groups.google.com/forum/#!forum/bazel-discuss">Discussion group</a></li>
+        <li><a href="https://slack.bazel.build">Slack</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-lg-12">
+      <p class="text-muted">&copy; 2020 Google</p>
+    </div>
+  </div>
+</div>
+
+    </footer>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="/assets/js/bootstrap.min.js"></script>
+
+<!-- Anchor JS -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/3.2.0/anchor.min.js"></script>
+    <script>
+      // Automatically add anchors and links to all header elements that don't already have them.
+      anchors.add();
+    </script>
+
+    <script>
+      var shiftWindow = function() {
+        if (location.hash.length !== 0) {
+          window.scrollBy(0, -50);
+        }
+      };
+      window.addEventListener("hashchange", shiftWindow);
+
+      var highlightCurrentSidebarNav = function() {
+        var href = location.pathname;
+        var item = $('#sidebar-nav [href$="' + href + '"]');
+        if (item) {
+          var li = item.parent();
+          li.addClass("active");
+
+          if (li.parent() && li.parent().is("ul")) {
+            do {
+              var ul = li.parent();
+              if (ul.hasClass("collapse")) {
+                ul.collapse("show");
+              }
+              li = ul.parent();
+            } while (li && li.is("li"));
+          }
+        }
+      };
+
+      $(document).ready(function() {
+        // Scroll to anchor of location hash, adjusted for fixed navbar.
+        window.setTimeout(function() {
+          shiftWindow();
+        }, 1);
+
+        // Flip the caret when submenu toggles are clicked.
+        $(".sidebar-submenu").on("show.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.addClass("dropup");
+          }
+        });
+        $(".sidebar-submenu").on("hide.bs.collapse", function() {
+          var toggle = $('[href$="#' + $(this).attr('id') + '"]');
+          if (toggle) {
+            toggle.removeClass("dropup");
+          }
+        });
+
+        // Highlight the current page on the sidebar nav.
+        highlightCurrentSidebarNav();
+      });
+    </script>
+
+    <!-- Google Analytics tracking code -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-61082125-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+
+  </body>
+</html>
